@@ -1,0 +1,2481 @@
+<!DOCTYPE html>
+<html lang="sw" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriLoan - Mfumo wa Mikopo na Soko la Wakulima</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --soil: #1f2937;
+            --parchment: #f6f0e2;
+            --basil: #0f766e;
+            --maize: #f59e0b;
+            --terracotta: #b45309;
+
+            /* Theme (minimal/clean) */
+            --primary: #367c2b; /* primary green */
+            --primary-2: #2f6f23; /* secondary green */
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 10px 30px rgba(2, 6, 23, 0.06);
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+
+        h1, h2, h3, h4, .fancy-title {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        /* Minimal/clean typography */
+        .app-title {
+            letter-spacing: -0.02em;
+        }
+        .section-title {
+            color: #0f172a;
+        }
+
+        /* Subtle focus styling */
+        :focus-visible {
+            outline: 3px solid rgba(16, 185, 129, 0.35);
+            outline-offset: 2px;
+        }
+
+        /* Fallback utility for inputs/buttons */
+        .soft-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+        .soft-hover {
+            transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+        }
+        .soft-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 40px rgba(2, 6, 23, 0.08);
+            border-color: rgba(16, 185, 129, 0.35);
+        }
+
+        /* Slide animations */
+        .slide {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity 1.8s ease-in-out;
+            overflow: hidden;
+        }
+
+        .slide.active {
+            opacity: 1;
+            z-index: 1;
+        }
+
+        .slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scale(1);
+            transition: transform 8s ease-in-out;
+        }
+
+        .slide.active img {
+            transform: scale(1.1);
+        }
+
+        /* Beautiful interactive growth track */
+        .growth-strip {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 70px;
+        }
+
+        .growth-strip .stage {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.4rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .growth-strip .stage .ic {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            color: #fff;
+        }
+
+        .growth-strip .stage.active .ic {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            border-color: #fbbf24;
+            color: var(--soil);
+            transform: scale(1.2);
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+        }
+
+        .growth-strip .stage span {
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+        }
+
+        .growth-strip .stage.active span {
+            color: #fbbf24;
+            font-weight: 700;
+        }
+
+        /* Stages already passed remain visible, while the current stage is highlighted. */
+        .growth-strip .stage.completed .ic {
+            background: #d1fae5;
+            border-color: #34d399;
+            color: #065f46;
+        }
+
+        .growth-strip .stage.completed span {
+            color: #a7f3d0;
+            font-weight: 600;
+        }
+
+        .growth-line {
+            position: absolute;
+            left: 10%;
+            right: 10%;
+            top: 20px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 1;
+        }
+
+        .growth-line-fill {
+            position: absolute;
+            left: 10%;
+            top: 20px;
+            height: 3px;
+            background: linear-gradient(90deg, #34d399, #fbbf24);
+            width: 0%;
+            transition: width 0.6s ease;
+            z-index: 1;
+        }
+
+        /* Crop Rotation card, based on the supplied tracker design. */
+        .crop-tracker-card {
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 2rem;
+            box-shadow: 0 18px 35px -20px rgba(15, 23, 42, 0.35);
+            color: #0f172a !important;
+        }
+        .crop-tracker-card .growth-strip .stage .ic { background: #f8fafc; border-color: #d1d5db; color: #64748b; }
+        .crop-tracker-card .growth-strip .stage span { color: #94a3b8; }
+        .crop-tracker-card .growth-strip .stage.active .ic { background: linear-gradient(135deg, #10b981, #059669); border-color: #10b981; color: #fff; box-shadow: 0 8px 20px -6px rgba(16, 185, 129, .45); }
+        .crop-tracker-card .growth-strip .stage.active span,
+        .crop-tracker-card .growth-strip .stage.completed span { color: #065f46; }
+        .crop-tracker-card .growth-line { background: #e5e7eb; }
+        .crop-tracker-card .growth-line-fill { background: linear-gradient(90deg, #34d399, #10b981); }
+        .crop-tracker-card .tracker-stat { background: #f8fafc; border: 1px solid #eef2f6; border-radius: 1.2rem; padding: 1rem 1.2rem; }
+
+        /* Gorgeous Custom Inputs with colorful gradients */
+        .colorful-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f7fee7 100%);
+            border: 2px solid #bef264;
+            box-shadow: 0 20px 40px -15px rgba(47, 74, 56, 0.15);
+            border-radius: 24px;
+        }
+
+        .field label {
+            color: #1b4332;
+            font-weight: 700;
+            font-size: 0.825rem;
+        }
+
+        .field input, .field select {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-size: 0.95rem;
+            background: #ffffff;
+            color: #0f172a;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .field input:focus, .field select:focus {
+            outline: none;
+            border-color: #10b981;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+            transform: translateY(-2px);
+        }
+
+        /* Premium public loan application experience */
+        #view-public-loan {
+            max-width: 1320px;
+            background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.10), transparent 32%), #f8fafc;
+        }
+        .premium-back {
+            background: #ffffff !important;
+            color: #334155 !important;
+            border: 1px solid #dbe4ec;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+        }
+        .premium-back:hover { background: #f8fafc !important; border-color: #94a3b8; }
+        .premium-form-card {
+            background: rgba(255, 255, 255, 0.96) !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 28px;
+            box-shadow: 0 24px 60px -34px rgba(15, 23, 42, 0.32);
+        }
+        .premium-info-banner {
+            background: linear-gradient(135deg, #123b32, #1d5c4b) !important;
+            border: 0 !important;
+            border-radius: 20px;
+            box-shadow: none;
+        }
+        .premium-section-label { color: #0f766e !important; letter-spacing: .08em; }
+        .premium-section-label > div { background: #dbe7e3 !important; height: 1px !important; }
+        .premium-form-card .field label { color: #334155; font-size: .78rem; letter-spacing: .01em; }
+        .premium-form-card .field input,
+        .premium-form-card .field select {
+            border: 1px solid #dbe3ec;
+            border-radius: 12px;
+            padding: .85rem 1rem;
+            background: #fcfdfd;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, .02);
+        }
+        .premium-form-card .field input:hover,
+        .premium-form-card .field select:hover { border-color: #a8c7bc; }
+        .premium-form-card .field input:focus,
+        .premium-form-card .field select:focus {
+            border-color: #0f766e;
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, .12);
+            transform: none;
+        }
+        .premium-agreement { border-color: #dbe7e3 !important; }
+        .premium-submit {
+            background: #0f766e !important;
+            border-radius: 14px !important;
+            box-shadow: 0 12px 22px -12px rgba(15, 118, 110, .55) !important;
+        }
+        .premium-submit:hover { background: #115e59 !important; transform: translateY(-1px) !important; }
+        .premium-repay-card {
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            box-shadow: 0 18px 35px -25px rgba(15, 23, 42, .25);
+        }
+
+        /* Landing page statistics and footer */
+        .landing-stats {
+            background: linear-gradient(135deg, #eff7f3 0%, #f8fafc 55%, #eef6f1 100%);
+            border-top: 1px solid #dcebe3;
+            border-bottom: 1px solid #dcebe3;
+        }
+        .landing-stat-card {
+            background: rgba(255, 255, 255, .88);
+            border: 1px solid #dbe8e1;
+            border-radius: 20px;
+            padding: 2rem 1.5rem;
+            box-shadow: 0 14px 30px -24px rgba(15, 78, 59, .40);
+        }
+        .landing-stat-card:nth-child(2) { border-color: #dce4ee; }
+        .landing-stat-card:nth-child(3) { border-color: #eadfbe; }
+        .landing-stat-value { color: #0f5f4f; letter-spacing: -.04em; }
+        .landing-stat-card:nth-child(2) .landing-stat-value { color: #1e4f78; }
+        .landing-stat-card:nth-child(3) .landing-stat-value { color: #a16207; }
+        .landing-stat-label { color: #64748b; }
+        .landing-footer {
+            background: #12352d;
+            color: #c7d9d1;
+            border-top: 1px solid #245044;
+        }
+
+        /* Produce Market: warm, natural palette with larger crop photography. */
+        .market-page {
+            background: linear-gradient(135deg, #fbf8f1, #f4f8f2);
+            border-radius: 28px;
+            padding: 1.5rem;
+        }
+        .market-sell-panel {
+            background: #fffdf8 !important;
+            border-color: #e6ddc9 !important;
+            box-shadow: 0 18px 35px -28px rgba(91, 64, 24, .35) !important;
+        }
+        .market-product-card {
+            background: #ffffff;
+            border: 1px solid #e6ddc9;
+            box-shadow: 0 18px 34px -27px rgba(83, 61, 25, .35);
+        }
+        .market-product-card:hover {
+            border-color: #b9cfb4;
+            box-shadow: 0 20px 38px -24px rgba(47, 109, 79, .28);
+            transform: translateY(-3px);
+        }
+        .market-product-image { height: 220px; background: #e6efe2; }
+        .market-product-image img { transition: transform .45s ease; }
+        .market-product-card:hover .market-product-image img { transform: scale(1.05); }
+        .market-badge { background: rgba(32, 92, 59, .93); color: #fff8dc; }
+        .market-qty-badge { background: rgba(41, 50, 43, .70); color: #ffffff; }
+        .market-buy-button { background: #2f6d4f; }
+        .market-buy-button:hover { background: #21563c; }
+        @media (max-width: 640px) {
+            .market-page { padding: 1rem; border-radius: 20px; }
+            .market-product-image { height: 190px; }
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-layout {
+                display: block !important;
+                background: white !important;
+                color: black !important;
+            }
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col overflow-x-hidden">
+
+    <!-- TOAST NOTIFICATIONS -->
+        <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+        <!-- Tailwind theme override: force emerald/lime utilities to use #367c2b -->
+        <style>
+            .text-emerald-950{color:#1f2937 !important;}
+            .bg-emerald-950\/95{background-color:rgba(31,41,55,0.95) !important;}
+            .bg-emerald-900{background-color:#367c2b !important;}
+            .bg-emerald-850{background-color:#2f6f23 !important;}
+            .bg-emerald-800{background-color:#2f6f23 !important;}
+            .bg-emerald-700{background-color:#367c2b !important;}
+            .bg-emerald-600{background-color:#367c2b !important;}
+            .bg-emerald-50{background-color:#eaf7e2 !important;}
+            .text-emerald-600{color:#367c2b !important;}
+            .text-emerald-700{color:#2f6f23 !important;}
+            .text-emerald-800{color:#2f6f23 !important;}
+            .text-emerald-850{color:#2f6f23 !important;}
+            .text-emerald-950{color:#1f2937 !important;}
+            .text-lime-500{color:#367c2b !important;}
+            .text-yellow-300{color:#fbbf24 !important;}
+            .bg-lime-500{background-color:#367c2b !important;}
+            .bg-lime-600{background-color:#2f6f23 !important;}
+            .bg-lime-400{background-color:#367c2b !important;}
+            .border-emerald-400{border-color:#367c2b !important;}
+            .border-emerald-500{border-color:#367c2b !important;}
+            .focus:ring-emerald-500:focus{--tw-ring-color:#367c2b !important;}
+        </style>
+
+    <!-- MAIN APP WRAPPER -->
+    <div id="app-root" class="min-h-screen flex flex-col">
+
+<!-- ==================== LANDING PAGE VIEW ==================== -->
+        <div id="view-landing" class="flex flex-col">
+            <!-- Navigation bar -->
+<nav style="background:#23805f" class="backdrop-blur-md sticky top-0 z-40 border-b border-emerald-900 px-6 py-4 no-print">
+                <div class="max-w-7xl mx-auto flex items-center justify-between">
+                    <a class="flex items-center gap-3 text-white text-2xl font-bold" href="#" aria-label="AgriLoan Home">
+                        <!-- Logo -->
+<div class="bg-white/0 border-0 p-0 rounded-none text-white flex items-center gap-2">
+<div class="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden ring-4 ring-emerald-100 ring-offset-4 ring-offset-[#23805f]">
+                                    <img src="logo.png.png" alt="AgriLoan Logo" class="w-[85%] h-[85%] object-contain" loading="lazy" />
+                                </div>
+                            </div>
+                    </a>
+                    
+                    
+                    <div class="hidden md:flex items-center gap-4 text-white font-medium">
+<a href="#features" class="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border border-white/20 font-bold px-6 py-3 rounded-xl text-base transition hover:-translate-y-0.5">Huduma</a>
+                        <a href="#how" class="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border border-white/20 font-bold px-6 py-3 rounded-xl text-base transition hover:-translate-y-0.5">Inavyofanya Kazi</a>
+                        <a href="#stats-anchor" class="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border border-white/20 font-bold px-6 py-3 rounded-xl text-base transition hover:-translate-y-0.5">Takwimu</a>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <button onclick="openPortalModal()" class="bg-white hover:bg-slate-100 text-slate-900 font-extrabold px-6 py-3 rounded-xl transition-all shadow-lg transform hover:-translate-y-0.5">
+                            Login
+                        </button>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Slideshow Hero Section -->
+            <section class="relative w-full h-[85vh] min-h-[550px] flex items-center justify-center overflow-hidden bg-black">
+                <div class="absolute inset-0 z-0">
+                    <div class="slide active">
+                        <img src="1.jpg.jpg" alt="AgriLoan Slide 1">
+                    </div>
+                    <div class="slide">
+                        <img src="2.jpg.jpg" alt="AgriLoan Slide 2">
+                    </div>
+                    <div class="slide">
+                        <img src="4.jpg.jpg" alt="AgriLoan Slide 3">
+                    </div>
+                </div>
+                <div class="absolute inset-0 z-10 bg-gradient-to-t from-slate-950/80 via-black/50 to-emerald-950/40"></div>
+
+                <!-- Hero Contents -->
+                <div class="relative z-20 text-center text-white px-6 max-w-4xl space-y-8">
+
+                    <h1 class="text-4xl md:text-6xl font-black leading-none text-white drop-shadow-xl app-title">
+                        Wasaidie Wakulima Kufikia Malengo Yao Kirahisi
+                    </h1>
+                    <p class="text-lg md:text-2xl text-slate-100 max-w-3xl mx-auto font-light leading-relaxed">
+                        Kupata mikopo kulingana na ukubwa wa shamba, kupakia na kuuza mazao katika soko la kidijitali — yote katika mfumo mmoja salama na wa rangi ya kuvutia.
+                    </p>
+                    <div class="pt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <button onclick="openPublicLoanForm()" class="bg-white hover:bg-slate-100 text-slate-900 font-black px-10 py-5 rounded-2xl text-lg shadow-2xl transition transform hover:-translate-y-1 w-full sm:w-auto">
+                            Apply for a Loan Now
+                        </button>
+<a href="#features" class="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border border-white/30 font-bold px-10 py-5 rounded-2xl text-lg transition transform hover:-translate-y-1 w-full sm:w-auto text-center backdrop-blur-sm">
+                            Soma Zaidi
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Slider Navigation Dots -->
+                <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-25 flex gap-3" id="landingDotsContainer"></div>
+            </section>
+
+            <!-- Features Section -->
+            <section class="py-24 px-6 bg-white" id="features">
+                <div class="max-w-7xl mx-auto">
+                    <div class="text-center max-w-3xl mx-auto mb-20 space-y-4">
+                        <span class="text-emerald-600 font-extrabold text-sm uppercase tracking-wider">HUDUMA ZETU</span>
+                        <h2 class="text-3xl md:text-5xl font-extrabold text-slate-900">Huduma Zetu Za Kidijitali</h2>
+                        <div class="h-1.5 w-24 bg-gradient-to-r from-emerald-500 to-lime-500 mx-auto rounded-full"></div>
+                        <p class="text-slate-500 text-lg">Tunawawezesha wakulima wadogo na wa kati kupata rasilimali na masoko kwa kutumia teknolojia ya kisasa.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <!-- Card 1 -->
+                        <div class="bg-slate-50 p-10 rounded-3xl border border-slate-100 hover:border-emerald-400 transition-all hover:-translate-y-2 duration-300 shadow-sm">
+                            <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white p-5 rounded-2xl w-16 h-16 flex items-center justify-center mb-8 shadow-lg">
+                                <i class="fa-solid fa-hand-holding-dollar text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-slate-900 mb-4">Mikopo yenye Riba Nafuu</h3>
+                            <p class="text-slate-600 leading-relaxed">
+                                Mfumo wetu unakupa mkopo wa pembejeo au mtaji na riba nafuu ya <strong class="text-emerald-600">12% kwa kila msimu</strong> kulingana na mahitaji yako.
+                            </p>
+                        </div>
+                        <!-- Card 2 -->
+                        <div class="bg-slate-50 p-10 rounded-3xl border border-slate-100 hover:border-emerald-400 transition-all hover:-translate-y-2 duration-300 shadow-sm">
+                            <div class="bg-gradient-to-br from-lime-500 to-lime-600 text-white p-5 rounded-2xl w-16 h-16 flex items-center justify-center mb-8 shadow-lg">
+                                <i class="fa-solid fa-store text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-slate-900 mb-4">Soko Kuu la Kidijitali</h3>
+                            <p class="text-slate-600 leading-relaxed">
+                                Wakulima walioidhinishwa wanapata fursa ya kupakia na kuuzia mazao yao kwa bei wanayochagua wao wenyewe bila kupitia madalali.
+                            </p>
+                        </div>
+                        <!-- Card 3 -->
+                        <div class="bg-slate-50 p-10 rounded-3xl border border-slate-100 hover:border-emerald-400 transition-all hover:-translate-y-2 duration-300 shadow-sm">
+                            <div class="bg-gradient-to-br from-amber-500 to-amber-600 text-white p-5 rounded-2xl w-16 h-16 flex items-center justify-center mb-8 shadow-lg">
+                                <i class="fa-solid fa-calculator text-2xl"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-slate-900 mb-4">Ukadiriaji wa Mavuno</h3>
+                            <p class="text-slate-600 leading-relaxed">
+                                Mfumo unakadiria tarehe sahihi ya mavuno ya zao husika ili kumpangia mkulima muda mzuri na rahisi wa kurejesha deni.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- How It Works -->
+            <section class="py-24 px-6 bg-slate-50 border-t border-slate-100" id="how">
+                <div class="max-w-7xl mx-auto">
+                    <div class="text-center max-w-3xl mx-auto mb-20 space-y-4">
+                        <span class="text-emerald-600 font-extrabold text-sm uppercase tracking-wider">MCHAKATO</span>
+                        <h2 class="text-3xl md:text-5xl font-extrabold text-slate-900">Jinsi Inavyofanya Kazi</h2>
+                        <div class="h-1.5 w-24 bg-gradient-to-r from-emerald-500 to-lime-500 mx-auto rounded-full"></div>
+                        <p class="text-slate-500">Mchakato rahisi wa hatua nne kuanza kunufaika na huduma zetu za kipekee.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                        <div class="bg-white p-8 rounded-3xl border border-slate-200/60 shadow-md relative text-center">
+                            <span class="absolute -top-6 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-lime-500 text-white w-12 h-12 rounded-full flex items-center justify-center font-black text-xl shadow-lg border-4 border-white">1</span>
+                            <h4 class="font-bold text-slate-800 mt-6 mb-3 text-xl">Tuma Ombi</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">Mkulima anajaza fomu ya maombi ya mkopo pamoja na barua pepe, namba ya NIDA na maelezo ya zao.</p>
+                        </div>
+                        <div class="bg-white p-8 rounded-3xl border border-slate-200/60 shadow-md relative text-center">
+                            <span class="absolute -top-6 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-lime-500 text-white w-12 h-12 rounded-full flex items-center justify-center font-black text-xl shadow-lg border-4 border-white">2</span>
+                            <h4 class="font-bold text-slate-800 mt-6 mb-3 text-xl">Uhakiki wa Admin</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">Meneja wa mfumo (Admin) anakagua maelezo na kuidhinisha. Mkulima atatumiwa nenosiri kwenye Gmail yake.</p>
+                        </div>
+                        <div class="bg-white p-8 rounded-3xl border border-slate-200/60 shadow-md relative text-center">
+                            <span class="absolute -top-6 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-lime-500 text-white w-12 h-12 rounded-full flex items-center justify-center font-black text-xl shadow-lg border-4 border-white">3</span>
+                            <h4 class="font-bold text-slate-800 mt-6 mb-3 text-xl">Ingia & Omba</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">Mkulima anaingia kwenye akaunti, anaona mkopo wake uliopitishwa, na kuomba soko la kuuzia bidhaa.</p>
+                        </div>
+                        <div class="bg-white p-8 rounded-3xl border border-slate-200/60 shadow-md relative text-center">
+                            <span class="absolute -top-6 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-lime-500 text-white w-12 h-12 rounded-full flex items-center justify-center font-black text-xl shadow-lg border-4 border-white">4</span>
+                            <h4 class="font-bold text-slate-800 mt-6 mb-3 text-xl">Uza & Lipa</h4>
+                            <p class="text-slate-500 text-sm leading-relaxed">Pakia mazao sokoni, fanya biashara kisha ulipe deni kwa riba ya asilimia 12 tu kufuatia mavuno yako.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dynamic Stats Section -->
+            <section class="landing-stats py-16 px-6" id="stats-anchor">
+                <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-5 text-center">
+                    <div class="landing-stat-card space-y-2">
+                        <div class="landing-stat-value text-5xl md:text-6xl font-black" id="live-stat-farmers">15+</div>
+<p class="landing-stat-label text-base font-semibold">Wakulima Kwenye Database</p>
+                    </div>
+                    <div class="landing-stat-card space-y-2">
+                        <div class="landing-stat-value text-5xl md:text-6xl font-black" id="live-stat-loans">Tsh 6.8M</div>
+                        <p class="landing-stat-label text-base font-semibold">Mzunguko wa Mikopo</p>
+                    </div>
+                    <div class="landing-stat-card space-y-2">
+                        <div class="landing-stat-value text-5xl md:text-6xl font-black" id="live-stat-rate">12%</div>
+                        <p class="landing-stat-label text-base font-semibold">Riba ya Msimu</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Landing Page Footer -->
+            <footer class="landing-footer py-10 px-6 text-center text-sm">
+<p>&copy; 2026 AgriLoan Systems. Shamba Letu, Maendeleo Yetu. Mfumo huu unahifadhi taarifa kwa usalama.</p>
+            </footer>
+        </div>
+
+
+        <!-- ==================== PUBLIC LOAN APPLICATION VIEW ==================== -->
+        <div id="view-public-loan" class="hidden flex-1 px-4 py-12 max-w-7xl mx-auto w-full space-y-8">
+            <div class="flex items-center justify-between no-print mb-4">
+                <button onclick="closePublicLoanForm()" class="premium-back px-5 py-2.5 rounded-xl font-semibold text-sm transition">
+Rudi Nyuma / Back to Home
+                </button>
+            </div>
+
+            <!-- Page Header -->
+            <div class="flex items-end justify-between gap-4 flex-wrap mb-6 border-b border-emerald-100 pb-6">
+                <div>
+                    <span class="font-bold text-xs tracking-wider uppercase text-emerald-600">Mfumo wa Mikopo ya Kilimo</span>
+                    <h1 class="text-3xl md:text-5xl font-black text-slate-900 mt-1 leading-none">Omba Mkopo wa Shamba</h1>
+                </div>
+                <div class="stage-track flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-sm" id="pubStageTrack">
+                    <span class="w-3 h-3 rounded-full bg-emerald-200 transition-colors" id="pub-dot-1"></span>
+                    <span class="w-3 h-3 rounded-full bg-emerald-200 transition-colors" id="pub-dot-2"></span>
+                    <span class="w-3 h-3 rounded-full bg-emerald-200 transition-colors" id="pub-dot-3"></span>
+                    <span class="w-3 h-3 rounded-full bg-emerald-200 transition-colors" id="pub-dot-4"></span>
+                    <span class="text-xs text-emerald-800 font-bold ml-2" id="pubStageLabel">Anza kujaza</span>
+                </div>
+            </div>
+
+            <!-- Layout: Form + Sidebar Panel -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start" id="pubFormContainer">
+                <div class="premium-form-card p-8 md:p-12 space-y-8 lg:col-span-2">
+                        <div class="premium-info-banner p-7 text-white">
+                            <h2 class="text-2xl font-semibold text-white">Taarifa za Maombi ya Mkopo</h2>
+                            <p class="text-sm text-emerald-100 mt-2">Jaza taarifa zako na taarifa za zao lako ili tukadirie tarehe ya mavuno na kiasi utakachorejesha kikiwa na riba nafuu ya msimu (12%).</p>
+                            <div class="text-sm text-emerald-100 mt-2">Fill in your information and crop details so we can estimate the harvest date and the amount you will repay with a seasonally low interest rate (12%).</div>
+                        </div>
+
+                    <form id="pubLoanForm" onsubmit="handlePublicFormSubmit(event)" class="space-y-6" novalidate>
+                        <div class="premium-section-label text-xs uppercase font-bold flex items-center gap-3 tracking-wider">
+                            <span>Taarifa Binafsi / Personal Details</span>
+                            <div class="h-0.5 bg-lime-200 flex-1"></div>
+                        </div>
+
+                        <!-- Full Name -->
+                        <div class="field">
+                            <label class="block mb-2" for="pubFullName">Jina Kamili / Full Name <span class="text-red-500">*</span></label>
+                            <input type="text" id="pubFullName" placeholder="Mfano: Amina John Mwakalinga" required oninput="validatePublicProgress()">
+                            <div class="helper err text-red-500 text-xs font-semibold mt-1 hidden" id="err-pubFullName"></div>
+                        </div>
+
+                        <!-- NIDA Number -->
+                        <div class="field">
+                            <label class="block mb-2" for="pubNida">NIDA (Namba ya Taifa) / National ID <span class="text-red-500">*</span></label>
+                            <input type="text" id="pubNida" maxlength="20" placeholder="Namba 20 za NIDA" required oninput="sanitizeNIDAPub(this)">
+                            <p class="text-[11px] text-emerald-800 font-semibold mt-1">Lazima iwe na tarakimu 20 / Must be exactly 20 digits</p>
+                            <div class="helper err text-red-500 text-xs font-semibold mt-1 hidden" id="err-pubNida"></div>
+                        </div>
+
+                        <!-- Phone and Email Row -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="field">
+                                <label class="block mb-2" for="pubPhone">Namba ya Simu / Phone <span class="text-red-500">*</span></label>
+                                <input type="tel" id="pubPhone" placeholder="07XX XXX XXX" required oninput="validatePublicProgress()">
+                                <div class="helper err text-red-500 text-xs font-semibold mt-1 hidden" id="err-pubPhone"></div>
+                            </div>
+                            <div class="field">
+                                <label class="block mb-2" for="pubEmail">Barua Pepe (Gmail) / Email <span class="text-red-500">*</span></label>
+                                <input type="email" id="pubEmail" placeholder="jina@gmail.com" required oninput="validatePublicProgress()">
+                                <div class="helper err text-red-500 text-xs font-semibold mt-1 hidden" id="err-pubEmail"></div>
+                            </div>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="field">
+                            <label class="block mb-2" for="pubLocation">Mahali / Location <span class="text-red-500">*</span></label>
+                            <input type="text" id="pubLocation" placeholder="Kijiji, Kata, Wilaya, Mkoa" required oninput="validatePublicProgress()">
+                            <div class="helper err text-red-500 text-xs font-semibold mt-1 hidden" id="err-pubLocation"></div>
+                        </div>
+
+                        <div class="premium-section-label text-xs uppercase font-bold flex items-center gap-3 tracking-wider">
+                            <span>Taarifa za Zao / Crop Details</span>
+                            <div class="h-0.5 bg-lime-200 flex-1"></div>
+                        </div>
+
+                        <!-- Crop Details Row -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="field">
+                                <label class="block mb-2" for="pubCropType">Aina ya Zao / Crop Type <span class="text-red-500">*</span></label>
+                                <select id="pubCropType" required onchange="calculatePublicRepayAndGrowth()">
+                                    <option value="">-- Chagua zao --</option>
+                                    <option value="Mahindi">Maize (Mahindi)</option>
+                                    <option value="Mpunga">Rice (Mpunga)</option>
+                                    <option value="Maharagwe">Beans (Maharagwe)</option>
+                                    <option value="Alizeti">Sunflower (Alizeti)</option>
+                                    <option value="Viazi">Potatoes (Viazi)</option>
+                                    <option value="Nyanya">Tomatoes (Nyanya)</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label class="block mb-2" for="pubPlantDate">Tarehe ya Kupanda / Planting Date <span class="text-red-500">*</span></label>
+                                <input type="date" id="pubPlantDate" required onchange="calculatePublicRepayAndGrowth()">
+                            </div>
+                        </div>
+
+                        <div class="premium-section-label text-xs uppercase font-bold flex items-center gap-3 tracking-wider">
+                            <span>Taarifa za Mkopo / Loan Details</span>
+                            <div class="h-0.5 bg-lime-200 flex-1"></div>
+                        </div>
+
+                        <!-- Requested Amount and Hectares -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="field">
+                                <label class="block mb-2" for="pubHectares">Ukubwa wa Shamba (Hekta) / Farm Size <span class="text-red-500">*</span></label>
+                                <input type="number" id="pubHectares" step="0.1" min="0.5" value="1.0" oninput="calculatePublicRepayAndGrowth()" required>
+                            </div>
+                            <div class="field">
+                                <label class="block mb-2" for="pubLoanAmount">Kiasi Unachohitaji (Tsh) / Requested Amount <span class="text-red-500">*</span></label>
+                                <input type="number" id="pubLoanAmount" min="10000" step="10000" placeholder="Mfano: 500000" oninput="calculatePublicRepayAndGrowth()" required>
+                                <div class="helper err text-red-500 text-xs font-semibold mt-1 hidden" id="err-pubLoanAmount"></div>
+                            </div>
+                        </div>
+
+                        <!-- Terms -->
+                        <label class="premium-agreement agree flex items-start gap-3 border-t border-dashed pt-5 mt-6 cursor-pointer">
+                            <input type="checkbox" id="pubAgreeTerms" required onchange="validatePublicProgress()" class="mt-1 w-5 h-5 rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500">
+                            <span class="text-xs text-emerald-800 leading-relaxed font-semibold">Nakubali masharti ya huduma na sera ya faragha ya AgriLoan / I agree to the Terms of Service and Privacy Policy</span>
+                        </label>
+
+                        <!-- Submit Button -->
+                        <div class="submit-row">
+                            <button type="submit" class="premium-submit w-full text-white font-bold py-4 text-center text-base transition-all" id="pubSubmitBtn">
+                                Wasilisha Maombi / Submit Application
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Public Tracker Sidebar -->
+                <div class="space-y-6">
+                    <!-- Shamba Tracker Card -->
+                    <div class="crop-tracker-card p-8 relative overflow-hidden">
+                        <div class="plot-head relative z-10 flex justify-between items-start">
+                            <div>
+                                <span class="text-[10px] tracking-widest uppercase text-emerald-600 font-extrabold block">Mzunguko wa Zao</span>
+                                <h3 id="pubPlotCropName" class="text-2xl font-black text-slate-800 mt-1">Chagua zao lako</h3>
+                                <p class="text-xs text-slate-400 font-medium mt-1">Crop Rotation &amp; Maturity Tracker</p>
+                            </div>
+                            <div class="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white p-2.5 rounded-2xl shadow-md"><i class="fa-solid fa-seedling text-xl"></i></div>
+                        </div>
+
+                        <!-- Growth Strip -->
+                        <div class="growth-strip mt-8 mb-4">
+                            <div class="growth-line"></div>
+                            <div class="growth-line-fill" id="pubGrowthFill"></div>
+                            <div class="stage" id="pub-stage-0"><div class="ic">🌱</div><span>Climbing</span></div>
+                            <div class="stage" id="pub-stage-1"><div class="ic">🌿</div><span>Dreaming</span></div>
+                            <div class="stage" id="pub-stage-2"><div class="ic">🌾</div><span>Growing up</span></div>
+                            <div class="stage" id="pub-stage-3"><div class="ic">🌻</div><span>Maturity</span></div>
+                            <div class="stage" id="pub-stage-4"><div class="ic">🧺</div><span>Harvest</span></div>
+                        </div>
+
+                        <!-- Stats on sidebar -->
+                        <div class="plot-stats relative z-10 grid grid-cols-2 gap-3 mt-6 text-sm">
+                            <div class="tracker-stat">
+                                <span class="text-[10px] text-slate-400 uppercase font-bold block">Maturity</span>
+                                <div class="font-bold text-emerald-600 mt-1 text-base" id="pubStatDays">Chagua zao na tarehe ya kupanda</div>
+                            </div>
+                            <div class="tracker-stat">
+                                <span class="text-[10px] text-slate-400 uppercase font-bold block">Harvest Date</span>
+                                <div class="font-black text-amber-700 mt-1 text-lg" id="pubStatHarvest">—</div>
+                                <div class="text-xs text-slate-400 font-semibold mt-1.5" id="pubStatHarvestSub"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Repayments Estimation Card (12% Season Interest!) -->
+                    <div class="premium-repay-card repay-card rounded-3xl p-8 space-y-6">
+                        <div class="rc-head flex items-center gap-3 pb-4 border-b border-amber-200/50">
+                            <h4 class="font-black text-slate-800 text-lg">Makadirio ya Marejesho</h4>
+                        </div>
+                        <div class="space-y-4 text-sm">
+                            <div class="repay-line flex justify-between pb-2 border-b border-dashed border-amber-200">
+                                <span class="text-slate-600">Kiasi cha Mkopo</span>
+                                <span class="font-bold text-slate-800" id="pubRepayPrincipal">TSh 0</span>
+                            </div>
+                            <div class="repay-line flex justify-between pb-2 border-b border-dashed border-amber-200">
+                                <span class="text-slate-600">Riba (12% kwa msimu)</span>
+                                <span class="font-bold text-red-600" id="pubRepayInterest">TSh 0</span>
+                            </div>
+                            <div class="repay-line total flex justify-between pt-3 border-t border-amber-900 text-base font-black text-red-700">
+                                <span>Jumla ya Kulipa</span>
+                                <span class="text-xl font-black" id="pubRepayTotal">TSh 0</span>
+                            </div>
+                        </div>
+                        <div class="repay-note text-[11px] text-slate-500 leading-relaxed pt-3 border-t border-amber-200/40" id="pubRepayDueNote">
+                            Malipo yatatakiwa ndani ya siku 14 baada ya mavuno. Kiasi hiki ni makadirio ya msimu; kiasi halisi kitathibitishwa na Admin baada ya kukagua taarifa.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Beautiful Success Panel screen replacement -->
+            <div id="pubSuccessPanel" class="hidden max-w-2xl mx-auto bg-white border border-emerald-100 rounded-3xl p-12 text-center shadow-2xl space-y-6">
+                <div class="w-24 h-24 bg-gradient-to-tr from-emerald-500 to-lime-500 text-white rounded-full flex items-center justify-center text-5xl mx-auto shadow-lg">
+                    <i class="fas fa-circle-check"></i>
+                </div>
+                <h2 class="text-3xl md:text-4xl font-black text-slate-900">Ombi Lako Limepokelewa!</h2>
+                <div class="text-base text-slate-600 space-y-4 leading-relaxed max-w-md mx-auto">
+                    <p>Hongera, maombi yako ya mkopo yamewasilishwa kikamilifu na kuhifadhiwa kwenye SQLite database ya AgriLoan.</p>
+                    <p class="font-bold text-emerald-700">Meneja wa mfumo atakagua maelezo yako ya NIDA na maelezo ya mashamba hivi punde.</p>
+                    <p>Nenosiri lako la siri la kuingilia kwenye portal litatumwa kwa barua pepe: <strong id="pubConfirmEmail" class="text-slate-950 font-extrabold text-lg block mt-2 bg-slate-50 py-2 rounded-xl"></strong></p>
+                </div>
+                <div class="pt-6 flex flex-col sm:flex-row gap-4 justify-center">
+                    <button onclick="closePublicLoanForm()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-8 py-4 rounded-xl font-bold text-base transition">
+                        Rudi Nyumbani / Go Home
+                    </button>
+                    <button onclick="openPortalModal()" class="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-900 px-8 py-4 rounded-xl font-black text-base shadow-lg transition">
+                        Fungua Portal / Login <i class="fa-solid fa-arrow-right-to-bracket ml-1.5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ==================== LOGGED IN SYSTEM VIEW ==================== -->
+        <div id="view-system" class="hidden flex flex-1 h-screen overflow-hidden">
+            <!-- Sidebar -->
+            <aside class="w-64 bg-emerald-950 text-white flex flex-col justify-between no-print">
+                <div>
+                    <!-- Sidebar Logo Header -->
+                <div class="p-6 flex items-center gap-3 border-b border-emerald-900">
+                        <div class="bg-white/0 p-2 rounded-xl text-white flex items-center gap-2 border-0">
+<div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white flex items-center justify-center overflow-hidden ring-4 ring-emerald-300 ring-offset-4 ring-offset-[#1f2937]">
+                            <img src="logo.png.png" alt="AgriLoan Logo" class="w-[90%] h-[90%] object-contain" />
+                        </div>
+                    </div>
+                </div>
+
+                    <!-- Sidebar Links -->
+                    <nav class="p-4 space-y-1">
+                        <button onclick="switchSystemTab('dashboard')" id="nav-dashboard" class="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold transition bg-emerald-900 text-white">
+                            <i class="fa-solid fa-chart-line w-5"></i> Dashboard Takwimu
+                        </button>
+                        <!-- Only for Farmers -->
+                        <button onclick="switchSystemTab('loan-request')" id="nav-loan-request" class="hidden flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold transition text-emerald-100 hover:bg-emerald-900">
+                            <i class="fa-solid fa-file-invoice-dollar w-5"></i> Omba Mkopo Mpya
+                        </button>
+                        <button onclick="switchSystemTab('farmers-list')" id="nav-farmers-list" class="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold transition text-emerald-100 hover:bg-emerald-900">
+                            <i class="fa-solid fa-users w-5"></i> Wakulima & Madeni
+                        </button>
+                        <button onclick="switchSystemTab('market')" id="nav-market" class="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold transition text-emerald-100 hover:bg-emerald-900">
+                            <i class="fa-solid fa-store w-5"></i> Soko la Mazao
+                        </button>
+                        <button onclick="switchSystemTab('staff-list')" id="nav-staff-list" class="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold transition text-emerald-100 hover:bg-emerald-900">
+                            <i class="fa-solid fa-user-tie w-5"></i> Orodha ya Staff
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Back to Public Web Page and Active Session Info -->
+                <div class="p-4 border-t border-emerald-900 bg-emerald-950/40 space-y-4">
+                        <button onclick="exitSystemToLanding()" class="w-full bg-red-650 hover:bg-red-700 bg-red-600 text-white text-xs py-2.5 rounded-xl font-bold transition shadow-sm">
+                        Logout
+                        </button>
+                    <div class="flex items-center gap-3 p-3 bg-emerald-900/40 rounded-2xl border border-emerald-900/60">
+<div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white flex items-center justify-center overflow-hidden ring-4 ring-yellow-300 ring-offset-4 ring-offset-[#0b3a1b]" id="user-initial">
+                            <img src="logo.png.png" alt="AgriLoan Logo" class="w-full h-full object-contain" />
+                        </div>
+                        <div class="overflow-hidden">
+                            <h4 class="font-bold text-sm truncate text-white" id="user-display">Admin Mkuu</h4>
+                            <span class="text-[9px] font-extrabold text-yellow-300 px-2 py-0.5 bg-emerald-850 rounded-full inline-block uppercase tracking-wider" id="user-role-badge">Admin</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Dashboard Content Panel -->
+            <main class="flex-1 flex flex-col overflow-y-auto bg-slate-50 relative">
+                <!-- Header of system view -->
+                <header class="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between no-print shadow-sm">
+                    <div>
+                        <h2 class="text-2xl md:text-3xl font-black text-slate-800" id="current-system-title">Dashboard ya Takwimu</h2>
+                        <p class="text-xs text-slate-500">Mzunguko mzima wa maombi ya mikopo, riba, na malipo ya msimu</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <button onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 border border-slate-200 transition">
+                            <i class="fa-solid fa-print"></i> Chapa / Print Ripoti
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Core Page Elements Inside System -->
+                <div class="p-8 max-w-7xl w-full mx-auto space-y-8 flex-1 print-layout">
+                    
+                    <!-- TAB 1: SYSTEM STATS AND CHARTS -->
+                    <div id="tab-dashboard" class="space-y-8">
+                        <!-- Dynamic Stat Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Wakulima SQLite</span>
+                                    <h3 class="text-3xl font-black text-slate-900 mt-2" id="stat-farmers">15</h3>
+                                    <span class="text-[11px] text-emerald-600 font-bold mt-1 inline-block"><i class="fa-solid fa-check"></i> Wote wamesajiliwa</span>
+                                </div>
+                                <div class="bg-emerald-50 text-emerald-800 p-4 rounded-2xl">
+                                    <i class="fa-solid fa-users text-2xl"></i>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Mikopo Amilifu</span>
+                                    <h3 class="text-3xl font-black text-slate-900 mt-2" id="stat-loans">Tsh 6,880,000</h3>
+                                    <span class="text-[11px] text-blue-600 font-bold mt-1 inline-block"><i class="fa-solid fa-wallet"></i> Mtaji ulio shambani</span>
+                                </div>
+                                <div class="bg-blue-50 text-blue-800 p-4 rounded-2xl">
+                                    <i class="fa-solid fa-circle-dollar-to-slot text-2xl"></i>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Riba ya Mfumo (12%)</span>
+                                    <h3 class="text-3xl font-black text-amber-600 mt-2" id="stat-fees">Tsh 825,600</h3>
+                                    <span class="text-[11px] text-amber-700 font-bold mt-1 inline-block"><i class="fa-solid fa-percent"></i> Mapato ya msimu</span>
+                                </div>
+                                <div class="bg-amber-50 text-amber-800 p-4 rounded-2xl">
+                                    <i class="fa-solid fa-chart-pie text-2xl"></i>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Madeni & Penalti</span>
+                                    <h3 class="text-3xl font-black text-red-600 mt-2" id="stat-penalties">Tsh 110,000</h3>
+                                    <span class="text-[11px] text-red-600 font-bold mt-1 inline-block"><i class="fa-solid fa-triangle-exclamation"></i> Wakulima waliozidi muda</span>
+                                </div>
+                                <div class="bg-red-50 text-red-800 p-4 rounded-2xl">
+                                    <i class="fa-solid fa-circle-exclamation text-2xl"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Charts Area -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm lg:col-span-2 space-y-4">
+                                <div class="flex items-center justify-between">
+                            
+                                    <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full">Sasisho la Mfumo</span>
+                                </div>
+                                <div class="h-80 relative">
+                                    <canvas id="systemPerformanceChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Summary info card -->
+                            <div class="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                                <div>
+                                    <h3 class="text-xl font-bold text-slate-800 mb-6">Muhtasari wa Mfumo</h3>
+                                    <div class="space-y-4 text-sm">
+                                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                            <span class="text-slate-500">Meneja Mkuu</span>
+                                            <span class="font-bold text-slate-800">1 Admin</span>
+                                        </div>
+                                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                            <span class="text-slate-500">Wafanyakazi</span>
+                                            <span class="font-bold text-slate-800">4 Staff Active</span>
+                                        </div>
+                                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                            <span class="text-slate-500">Mazao Sokoni</span>
+                                            <span class="font-bold text-emerald-700" id="stat-soko-count">6 Mazao</span>
+                                        </div>
+                                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                            <span class="text-slate-500">Kipindi cha Kulipa</span>
+                                            <span class="font-bold text-emerald-700">Mavuno Yakikamilika</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-8 pt-4">
+                                    <button onclick="switchSystemTab('farmers-list')" class="w-full bg-emerald-800 hover:bg-emerald-900 text-white font-bold py-4 px-4 rounded-xl text-center text-sm transition shadow-md">
+                                        Kagua Wakulima & Madeni
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: PORTAL LOAN APPLICATION FORM (Swahili Form style, only for Logged-In Farmers) -->
+                    <div id="tab-loan-request" class="hidden">
+                        <div class="flex items-center justify-between gap-4 flex-wrap mb-6 border-b border-emerald-100 pb-4">
+                            <div>
+                                <span class="text-xs tracking-wider uppercase text-emerald-600 font-bold">Akaunti yako ya Mkulima</span>
+                                <h1 class="text-2xl font-bold text-slate-800 mt-1">Maombi ya Mkopo Mpya</h1>
+                            </div>
+                            <div class="stage-track flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-full px-4 py-1.5 shadow-sm" id="sysStageTrack">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-200" id="sys-dot-1"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-200" id="sys-dot-2"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-200" id="sys-dot-3"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-200" id="sys-dot-4"></span>
+                                <span class="text-xs text-emerald-850 font-bold ml-1" id="sysStageLabel">Anza kujaza</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                            <div class="colorful-card p-8 md:p-10 space-y-6 lg:col-span-2">
+                                <div class="bg-gradient-to-r from-emerald-800 to-emerald-700 rounded-2xl p-6 text-white shadow-md mb-2 border border-emerald-600">
+                                    <h3 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-wheat-awn text-yellow-300 animate-pulse"></i> Wasilisha Maombi ya Mkopo</h3>
+                                    <p class="text-xs text-emerald-100">Kama mkulima uliyesajiliwa, unaweza kuomba mkopo mpya wa pembejeo au vifaa kulingana na msimu.</p>
+                                </div>
+                                <form id="sysPortalLoanForm" onsubmit="handlePortalFormSubmit(event)" class="space-y-6">
+                                    <div class="text-[10px] uppercase font-bold text-amber-600 flex items-center gap-2 tracking-wider">
+                                        <span>Taarifa Binafsi / Personal Details</span>
+                                        <div class="h-px bg-lime-300 flex-1"></div>
+                                    </div>
+
+                                    <div class="field">
+                                        <label class="block mb-1.5" for="sysFullName">Jina Kamili / Full Name <span class="text-red-500">*</span></label>
+                                        <input type="text" id="sysFullName" required oninput="validateSysProgress()">
+                                        <div class="helper err text-red-500 text-xs font-semibold mt-1 hidden" id="err-sysFullName"></div>
+                                    </div>
+
+                                    <div class="field">
+                                        <label class="block mb-1.5" for="sysNida">NIDA (Namba ya Taifa) <span class="text-red-500">*</span></label>
+                                        <input type="text" id="sysNida" maxlength="20" required oninput="sanitizeNIDASys(this)">
+                                        <div class="helper err text-red-500 text-xs font-semibold mt-1 hidden" id="err-sysNida"></div>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div class="field">
+                                            <label class="block mb-1.5" for="sysPhone">Namba ya Simu / Phone <span class="text-red-500">*</span></label>
+                                            <input type="tel" id="sysPhone" required oninput="validateSysProgress()">
+                                        </div>
+                                        <div class="field">
+                                            <label class="block mb-1.5" for="sysEmail">Barua Pepe / Email <span class="text-red-500">*</span></label>
+                                            <input type="email" id="sysEmail" required readonly class="opacity-75 cursor-not-allowed bg-slate-100">
+                                        </div>
+                                    </div>
+
+                                    <div class="field">
+                                        <label class="block mb-1.5" for="sysLocation">Mahali / Location <span class="text-red-500">*</span></label>
+                                        <input type="text" id="sysLocation" required oninput="validateSysProgress()">
+                                    </div>
+
+                                    <div class="text-[10px] uppercase font-bold text-amber-600 flex items-center gap-2 tracking-wider">
+                                        <span>Taarifa za Zao / Crop Details</span>
+                                        <div class="h-px bg-lime-300 flex-1"></div>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div class="field">
+                                            <label class="block mb-1.5" for="sysCropType">Aina ya Zao / Crop Type <span class="text-red-500">*</span></label>
+                                            <select id="sysCropType" required onchange="calculateSysRepayAndGrowth()">
+                                                <option value="">-- Chagua zao --</option>
+                                                <option value="Mahindi">Maize (Mahindi)</option>
+                                                <option value="Mpunga">Rice (Mpunga)</option>
+                                                <option value="Maharagwe">Beans (Maharagwe)</option>
+                                                <option value="Alizeti">Sunflower (Alizeti)</option>
+                                                <option value="Viazi">Potatoes (Viazi)</option>
+                                                <option value="Nyanya">Tomatoes (Nyanya)</option>
+                                            </select>
+                                        </div>
+                                        <div class="field">
+                                            <label class="block mb-1.5" for="sysPlantDate">Tarehe ya Kupanda <span class="text-red-500">*</span></label>
+                                            <input type="date" id="sysPlantDate" required onchange="calculateSysRepayAndGrowth()">
+                                        </div>
+                                    </div>
+
+                                    <div class="text-[10px] uppercase font-bold text-amber-600 flex items-center gap-2 tracking-wider">
+                                        <span>Taarifa za Mkopo / Loan Details</span>
+                                        <div class="h-px bg-lime-300 flex-1"></div>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div class="field">
+                                            <label class="block mb-1.5" for="sysHectares">Ukubwa wa Shamba (Hekta)</label>
+                                            <input type="number" id="sysHectares" step="0.1" min="0.5" value="1.0" oninput="calculateSysRepayAndGrowth()">
+                                        </div>
+                                        <div class="field">
+                                            <label class="block mb-1.5" for="sysLoanAmount">Kiasi Unachohitaji (Tsh)</label>
+                                            <input type="number" id="sysLoanAmount" min="10000" oninput="calculateSysRepayAndGrowth()">
+                                        </div>
+                                    </div>
+
+                                    <label class="agree flex items-start gap-3 border-t border-dashed border-emerald-200 pt-4 mt-6">
+                                        <input type="checkbox" id="sysAgreeTerms" required onchange="validateSysProgress()" class="mt-1 accent-emerald-650">
+                                        <span class="text-xs text-emerald-800 font-semibold leading-relaxed">Nakubali masharti ya huduma na sera ya faragha</span>
+                                    </label>
+
+                                    <button type="submit" class="w-full bg-gradient-to-r from-emerald-700 to-emerald-600 hover:from-emerald-800 hover:to-emerald-750 text-white font-bold py-4 rounded-xl text-center text-sm transition shadow-lg flex items-center justify-center gap-2 transform hover:-translate-y-0.5">
+                                        <i class="fas fa-paper-plane text-yellow-300 animate-bounce"></i> Wasilisha Maombi ya Mkopo
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Portal inner sidebar -->
+                            <div class="space-y-6">
+                                <div class="plot bg-gradient-to-br from-emerald-950 to-slate-900 rounded-3xl p-6 text-white relative overflow-hidden shadow-md">
+                                    <div class="plot-head relative z-10 flex justify-between items-start">
+                                        <div>
+                                            <span class="text-[10px] tracking-wider uppercase text-yellow-400 font-bold block">Mzunguko wa Zao</span>
+                                            <h3 id="sysPlotCropName" class="text-lg font-bold text-white mt-1">Chagua zao lako</h3>
+                                        </div>
+                                        <i class="fas fa-cloud-sun text-yellow-400 text-xl"></i>
+                                    </div>
+
+                                    <div class="growth-strip mt-6 mb-4">
+                                        <div class="growth-line"></div>
+                                        <div class="growth-line-fill" id="sysGrowthFill"></div>
+                                        <div class="stage" id="sys-stage-0"><div class="ic">🌱</div><span>Climbing</span></div>
+                                        <div class="stage" id="sys-stage-1"><div class="ic">🌿</div><span>Dreaming</span></div>
+                                        <div class="stage" id="sys-stage-2"><div class="ic">🌾</div><span>Growing up</span></div>
+                                        <div class="stage" id="sys-stage-3"><div class="ic">🌻</div><span>Maturity</span></div>
+                                        <div class="stage" id="sys-stage-4"><div class="ic">🧺</div><span>Harvest</span></div>
+                                    </div>
+
+                                    <div class="plot-stats relative z-10 space-y-3 mt-4 pt-4 border-t border-white/10 text-xs">
+                                        <div class="bg-white/5 border border-white/10 rounded-xl p-3">
+                                            <span class="text-[9px] text-slate-300 uppercase block">Muda wa Kukomaa / Maturity</span>
+                                            <div class="font-semibold text-white mt-1" id="sysStatDays">Chagua zao na tarehe ya kupanda</div>
+                                        </div>
+                                        <div class="bg-white/5 border border-white/10 rounded-xl p-3">
+                                            <span class="text-[9px] text-slate-300 uppercase block">Tarehe ya Mavuno / Harvest Date</span>
+                                            <div class="font-bold text-yellow-300 mt-1 text-sm" id="sysStatHarvest">—</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="repay-card bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl p-6 border-2 border-amber-200 shadow-sm space-y-4">
+                                    <div class="rc-head flex items-center gap-2 pb-3 border-b border-amber-200/50">
+                                        <i class="fas fa-hand-holding-dollar text-orange-600 text-lg"></i>
+                                        <h4 class="font-bold text-emerald-950 text-sm">Makadirio ya Marejesho</h4>
+                                    </div>
+                                    <div class="space-y-3 text-xs">
+                                        <div class="repay-line flex justify-between pb-1 border-b border-dashed border-amber-200">
+                                            <span class="text-slate-600">Kiasi cha Mkopo</span>
+                                            <span class="font-bold text-slate-800" id="sysRepayPrincipal">TSh 0</span>
+                                        </div>
+                                        <div class="repay-line flex justify-between pb-1 border-b border-dashed border-amber-200">
+                                            <span class="text-slate-600">Riba (12% kwa msimu)</span>
+                                            <span class="font-bold text-orange-600" id="sysRepayInterest">TSh 0</span>
+                                        </div>
+                                        <div class="repay-line total flex justify-between pt-2 border-t border-amber-900 text-sm font-bold text-red-700">
+                                            <span>Jumla ya Kulipa</span>
+                                            <span class="amt text-base font-extrabold" id="sysRepayTotal">TSh 0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: FARMERS & LOANS LIST (With Action controls) -->
+                    <div id="tab-farmers-list" class="hidden">
+                        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                            <!-- Filter & Search Panel -->
+                            <div class="p-6 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row items-center justify-between gap-4 no-print">
+                                <div class="flex items-center gap-3">
+                                    <h3 class="text-lg font-bold text-slate-850">Usimamizi wa Wakulima & Madeni</h3>
+                                    <span class="bg-emerald-100 text-emerald-900 text-xs font-bold px-3 py-1 rounded-full animate-pulse" id="lbl-farmers-count">15 Active</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <input type="text" id="sysSearchFarmer" oninput="runFarmerSearch()" placeholder="Tafuta kwa jina, gmail au zao..." class="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-64 shadow-sm">
+                                </div>
+                            </div>
+
+                            <!-- Print Header -->
+                            <div class="hidden print-layout p-6 text-center border-b-2 border-slate-800 bg-emerald-50">
+                                <h1 class="text-3xl font-extrabold text-emerald-950 uppercase tracking-wider">Ripoti Rasmi ya AgriLoan Systems</h1>
+                                <p class="text-sm mt-1">Ukurasa Rasmi wa Usimamizi wa Madeni, Mikopo na Penalti</p>
+                                <p class="text-xs text-slate-400 mt-2">Imechangiwa tarehe: <span class="lbl-current-date"></span> | SQLite Persistence Engined</p>
+                            </div>
+
+                            <!-- Table Area -->
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-slate-50 text-slate-400 font-bold text-xs uppercase border-b border-slate-200">
+                                            <th class="p-4 pl-6">Mkulima & Gmail</th>
+                                            <th class="p-4">Zao Linalolimwa</th>
+                                            <th class="p-4">Ukubwa (Hekta)</th>
+                                            <th class="p-4">Kiasi Kilichoomba</th>
+                                            <th class="p-4">Deni na Riba (12%)</th>
+                                            <th class="p-4">Mwisho wa Kulipa</th>
+                                            <th class="p-4">Hali ya Uhakiki</th>
+                                            <th class="p-4 text-right pr-6 no-print">Vitendo / Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbl-farmers-body" class="divide-y divide-slate-100 text-sm">
+                                        <!-- Dynamic load -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: SOKO (MARKETPLACE) -->
+                    <div id="tab-market" class="market-page hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <!-- Left: Upload crop form -->
+                            <div class="market-sell-panel rounded-3xl p-6 border shadow-sm space-y-6 h-fit no-print">
+                                <div class="border-b border-slate-100 pb-4">
+                                    <h3 class="text-lg font-bold text-slate-800">Uza Mazao Yako sokoni</h3>
+                                    <p class="text-xs text-slate-400">Pakia mazao ili wanunuzi na wakulima wengine wayaone sokoni.</p>
+                                </div>
+                                <div id="div-market-permission" class="bg-emerald-50 border border-emerald-100 p-4 rounded-xl text-xs text-emerald-800 flex items-start gap-2">
+                                    <span>Mkulima aliyethibitishwa na Admin pekee ndiye anaruhusiwa kupakia bidhaa sokoni.</span>
+                                </div>
+                                <form id="sysMarketForm" onsubmit="handleSystemMarketSubmit(event)" class="space-y-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Jina la Zao</label>
+                                        <input type="text" id="mktCrop" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none transition shadow-sm" placeholder="Mfano: Mahindi Mazuri ya Njano">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Bei (Tsh kwa kilo/gunia)</label>
+                                        <input type="number" id="mktPrice" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none transition shadow-sm" placeholder="Mfano: 85000">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Kiasi Kilichopo (Kipimo)</label>
+                                        <input type="text" id="mktQty" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none transition shadow-sm" placeholder="Mfano: Mifuko 40 au Tani 1">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Picha ya Zao / Crop Image</label>
+                                        <div class="flex gap-3 items-center">
+                                            <label class="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-xl p-4 bg-slate-50 cursor-pointer hover:bg-slate-100 transition duration-150">
+                                                <i class="fa-solid fa-camera text-slate-400 text-xl mb-1"></i>
+                                                <span class="text-xs text-slate-500 font-semibold" id="lbl-upload-status">Chagua Picha</span>
+                                                <input type="file" id="mktImageFile" accept="image/*" class="hidden" onchange="previewMarketImage(this)">
+                                            </label>
+                                            <div id="mktImagePreviewContainer" class="hidden w-20 h-20 rounded-xl border border-slate-200 overflow-hidden relative shadow-inner">
+                                                <img id="mktImagePreview" class="w-full h-full object-cover">
+                                                <button type="button" onclick="clearMarketImagePreview()" class="absolute top-0.5 right-0.5 bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] hover:bg-red-700 transition">
+                                                    <i class="fa-solid fa-xmark"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="submit" id="btn-mkt-submit" class="w-full bg-[#063c1a] hover:bg-emerald-800 text-white font-bold py-3 px-4 rounded-xl text-center text-xs transition">
+                                        <i class="fa-solid fa-cloud-arrow-up mr-2"></i> Pakia Tangazo Sokoni
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Right: Marketplace products list -->
+                            <div class="lg:col-span-2 space-y-6">
+                                <div class="flex items-center justify-between no-print">
+                                    <h3 class="text-xl font-bold text-slate-800">Mazao Amilifu Sokoni</h3>
+                        <span class="text-xs bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full">Produce Market</span>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="mkt-grid-container">
+                                    <!-- Dynamic items -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 5: STAFF LIST -->
+                    <div id="tab-staff-list" class="hidden">
+                        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div class="p-6 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-800">Orodha ya Wafanyakazi (Staff)</h3>
+                                    <p class="text-xs text-slate-400">Maafisa wa mfumo wenye haki ya kuangalia taarifa na ku-print ripoti pekee.</p>
+                                </div>
+                                <span class="bg-emerald-950 text-white text-xs font-bold px-3 py-1 rounded-full">4 Staff Active</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-slate-50 text-slate-400 font-bold text-xs uppercase border-b border-slate-200">
+                                            <th class="p-4 pl-6">ID ya Kazi</th>
+                                            <th class="p-4">Jina Kamili</th>
+                                            <th class="p-4">Barua Pepe (Gmail)</th>
+                                            <th class="p-4">Wajibu / Role</th>
+                                            <th class="p-4 text-xs">Viwango vya Ruhusa</th>
+                                            <th class="p-4 text-right pr-6">Hali</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbl-staff-body" class="divide-y divide-slate-100 text-sm">
+                                        <!-- Dynamic load via Javascript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+
+    </div>
+
+    <!-- PORTAL ACCESS / LOGIN MODAL -->
+    <div id="portal-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden transform transition-all duration-300">
+            <div class="bg-gradient-to-r from-emerald-950 to-emerald-900 p-6 text-white flex items-center justify-between">
+                <div>
+                    <h3 class="text-xl font-bold text-white">Lango la Mfumo (Portal)</h3>
+                    <p class="text-xs text-emerald-300 mt-1">Chagua mtumiaji au ingia na nenosiri lako</p>
+                </div>
+                <button onclick="closePortalModal()" class="text-white/80 hover:text-white text-2xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- User simulated selection -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-700 uppercase">Akaunti za SQLite (Quick Access Simulation)</label>
+                    <select id="sel-login-identity" onchange="syncSelectedIdentity()" class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="admin">Meneja wa Mfumo (Admin) - admin@shambafund.com</option>
+                        <option value="staff">Mfanyakazi (Staff) - mary@shambafund.com</option>
+                        <option value="mkulima">Mkulima (Juma Shabani) - juma@gmail.com</option>
+                    </select>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Barua Pepe</label>
+                        <input type="email" id="txt-login-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Nenosiri / Password</label>
+                        <input type="password" id="txt-login-pass" value="••••••••" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                </div>
+                    <button onclick="performUserLogin()" class="w-full bg-gradient-to-r from-emerald-700 to-lime-600 hover:from-emerald-800 hover:to-lime-700 text-white font-extrabold py-4 rounded-xl text-sm transition shadow-lg flex items-center justify-center gap-2">
+                    Thibitisha na Ingia Kwenye Portal
+                    </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ==================== LOGIC AND STATE MANAGEMENT (Simulated SQLite inside LocalStorage) ==================== -->
+    <script>
+        
+        // Initial Mock Database Seeders
+        const initialFarmers = [
+            { id: 1, name: "Juma Shabani", email: "juma@gmail.com", crop: "Mahindi", hectares: 2.5, requestedAmount: 600000, approvedAmount: 500000, totalDebt: 560000, systemFee: 60000, harvestMonths: 4, dueDate: "2026-11-07", status: "Approved", isSugu: false, penalty: 0 },
+            { id: 2, name: "Asha Hamisi", email: "asha@gmail.com", crop: "Mpunga", hectares: 1.0, requestedAmount: 200000, approvedAmount: 200000, totalDebt: 224000, systemFee: 24000, harvestMonths: 5, dueDate: "2026-12-07", status: "Approved", isSugu: false, penalty: 0 },
+            { id: 3, name: "Baraka Elias", email: "baraka@gmail.com", crop: "Maharagwe", hectares: 3.0, requestedAmount: 800000, approvedAmount: 600000, totalDebt: 672000, systemFee: 72000, harvestMonths: 3, dueDate: "2026-10-07", status: "Pending", isSugu: false, penalty: 0 },
+            { id: 4, name: "Chausiku Selemani", email: "chausiku@gmail.com", crop: "Alizeti", hectares: 5.0, requestedAmount: 1000000, approvedAmount: 1000000, totalDebt: 1120000, systemFee: 120000, harvestMonths: 4, dueDate: "2026-11-07", status: "Approved", isSugu: false, penalty: 0 },
+            { id: 5, name: "David Mwita", email: "david@gmail.com", crop: "Mahindi", hectares: 1.5, requestedAmount: 400000, approvedAmount: 300000, totalDebt: 336000, systemFee: 36000, harvestMonths: 4, dueDate: "2026-11-07", status: "Pending", isSugu: false, penalty: 0 },
+            { id: 6, name: "Fatuma Ramadhani", email: "fatuma@gmail.com", crop: "Mpunga", hectares: 4.0, requestedAmount: 900000, approvedAmount: 800000, totalDebt: 896000, systemFee: 96000, harvestMonths: 5, dueDate: "2026-12-07", status: "Paid", isSugu: false, penalty: 0 },
+            { id: 7, name: "Grace Masawe", email: "grace@gmail.com", crop: "Maharagwe", hectares: 0.5, requestedAmount: 150000, approvedAmount: 100000, totalDebt: 112000, systemFee: 12000, harvestMonths: 3, dueDate: "2026-06-07", status: "Approved", isSugu: true, penalty: 60000 },
+            { id: 8, name: "Hassan Athumani", email: "hassan@gmail.com", crop: "Alizeti", hectares: 1.2, requestedAmount: 300000, approvedAmount: 240000, totalDebt: 268800, systemFee: 28800, harvestMonths: 4, dueDate: "2026-11-07", status: "Approved", isSugu: false, penalty: 0 },
+            { id: 9, name: "Irene Shirley", email: "irene@gmail.com", crop: "Mahindi", hectares: 3.5, requestedAmount: 700000, approvedAmount: 700000, totalDebt: 784000, systemFee: 84000, harvestMonths: 4, dueDate: "2026-11-07", status: "Pending", isSugu: false, penalty: 0 },
+            { id: 10, name: "Joseph Ngatunga", email: "joseph@gmail.com", crop: "Mpunga", hectares: 2.0, requestedAmount: 500000, approvedAmount: 400000, totalDebt: 448000, systemFee: 48000, harvestMonths: 5, dueDate: "2026-12-07", status: "Approved", isSugu: false, penalty: 0 },
+
+            { id: 11, name: "Amani Baraka", email: "amani.baraka@gmail.com", crop: "Nyanya", hectares: 1.0, requestedAmount: 250000, approvedAmount: 250000, totalDebt: 280000, systemFee: 30000, harvestMonths: 3, dueDate: "2026-10-07", status: "Approved", isSugu: false, penalty: 0 },
+            { id: 12, name: "Neema Barongo", email: "neema.barongo@gmail.com", crop: "Viazi", hectares: 2.2, requestedAmount: 420000, approvedAmount: 380000, totalDebt: 425600, systemFee: 45600, harvestMonths: 4, dueDate: "2026-11-07", status: "Approved", isSugu: false, penalty: 0 },
+            { id: 13, name: "Bakari Kombo", email: "bakari.kombo@gmail.com", crop: "Mahindi", hectares: 3.0, requestedAmount: 650000, approvedAmount: 600000, totalDebt: 672000, systemFee: 72000, harvestMonths: 4, dueDate: "2026-11-07", status: "Pending", isSugu: false, penalty: 0 },
+            { id: 14, name: "Halima Mussa", email: "halima.mussa@gmail.com", crop: "Mpunga", hectares: 1.5, requestedAmount: 300000, approvedAmount: 300000, totalDebt: 336000, systemFee: 36000, harvestMonths: 5, dueDate: "2026-12-07", status: "Approved", isSugu: false, penalty: 0 },
+            { id: 15, name: "Rehema Luhanga", email: "rehema.luhanga@gmail.com", crop: "Maharagwe", hectares: 0.8, requestedAmount: 180000, approvedAmount: 160000, totalDebt: 179200, systemFee: 19200, harvestMonths: 3, dueDate: "2026-10-07", status: "Approved", isSugu: false, penalty: 0 },
+            { id: 16, name: "Peter Sanga", email: "peter.sanga@gmail.com", crop: "Alizeti", hectares: 2.4, requestedAmount: 520000, approvedAmount: 500000, totalDebt: 560000, systemFee: 60000, harvestMonths: 4, dueDate: "2026-11-07", status: "Pending", isSugu: false, penalty: 0 },
+            { id: 17, name: "Zuberi Maganga", email: "zuberi.maganga@gmail.com", crop: "Nyanya", hectares: 1.6, requestedAmount: 260000, approvedAmount: 240000, totalDebt: 268800, systemFee: 28800, harvestMonths: 3, dueDate: "2026-10-07", status: "Approved", isSugu: false, penalty: 0 },
+            { id: 18, name: "Fatma Kassim", email: "fatma.kassim@gmail.com", crop: "Viazi", hectares: 3.2, requestedAmount: 610000, approvedAmount: 550000, totalDebt: 616000, systemFee: 66000, harvestMonths: 4, dueDate: "2026-11-07", status: "Approved", isSugu: false, penalty: 0 },
+            { id: 19, name: "Baraka Nyerere", email: "baraka.nyerere@gmail.com", crop: "Mahindi", hectares: 2.0, requestedAmount: 400000, approvedAmount: 350000, totalDebt: 392000, systemFee: 42000, harvestMonths: 4, dueDate: "2026-11-07", status: "Paid", isSugu: false, penalty: 0 },
+            { id: 20, name: "Salome Mwilima", email: "salome.mwilima@gmail.com", crop: "Mpunga", hectares: 1.1, requestedAmount: 240000, approvedAmount: 230000, totalDebt: 257600, systemFee: 27600, harvestMonths: 5, dueDate: "2026-12-07", status: "Approved", isSugu: true, penalty: 45000 }
+        ];
+
+        const initialStaff = [
+            { id: "STF-201", name: "John Mndeme", email: "john@shambafund.com", role: "Maafisa Mikopo", permissions: "Soma Taarifa Pekee" },
+            { id: "STF-202", name: "Mary Lema", email: "mary@shambafund.com", role: "Mhasibu Mkuu", permissions: "Soma Taarifa Pekee" },
+            { id: "STF-203", name: "Saidi Juma", email: "saidi@shambafund.com", role: "Kaguzi wa Ndani", permissions: "Soma Taarifa Pekee" },
+            { id: "STF-204", name: "Neema Masawe", email: "neema@shambafund.com", role: "Mhasibu Msaidizi", permissions: "Soma Taarifa Pekee" }
+        ];
+
+        const initialMarket = [
+            { id: 1, seller: "Juma Shabani", crop: "Mahindi Safi ya Njano", price: 85000, qty: "Mifuko 50", image: "media/mahindi.jpg" },
+            { id: 2, seller: "Asha Hamisi", crop: "Mchele safi wa Kyela", price: 210000, qty: "Mifuko 10", image: "media/Fresh Kyela rice.jpg" },
+            { id: 3, seller: "Chausiku Selemani", crop: "Alizeti Safi", price: 120000, qty: "Tani 1.5", image: "media/Sunflower.jpg" },
+            { id: 4, seller: "Fatuma Ramadhani", crop: "Mpunga Safi wa Shamba", price: 95000, qty: "Mifuko 120", image: "media/Fresh Kyela rice.jpg" }
+        ];
+
+        // Retrieve or Seed values to persist database actions using localStorage
+        let dbFarmers = JSON.parse(localStorage.getItem('agri_farmers')) || initialFarmers;
+        let dbStaff = JSON.parse(localStorage.getItem('agri_staff')) || initialStaff;
+        let dbMarket = JSON.parse(localStorage.getItem('agri_market')) || initialMarket;
+
+        function saveToSQLiteStorage() {
+            localStorage.setItem('agri_farmers', JSON.stringify(dbFarmers));
+            localStorage.setItem('agri_staff', JSON.stringify(dbStaff));
+            localStorage.setItem('agri_market', JSON.stringify(dbMarket));
+        }
+
+        // Active State variables
+        let activeUser = {
+            role: "admin",
+            name: "Admin Mkuu",
+            email: "admin@shambafund.com"
+        };
+
+        const INTEREST_RATE = 0.12; // 12% Season Interest rate
+        let currentSystemTab = "dashboard";
+        let chartInstance = null;
+        let slideIndex = 0;
+        let selectedMarketImageBase64 = "";
+
+        // UI Toast Messages
+        function showToast(message, type = "success") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            let bg = "bg-emerald-800";
+            let icon = "fa-circle-check";
+            
+            if (type === "error") {
+                bg = "bg-red-600";
+                icon = "fa-triangle-exclamation";
+            } else if (type === "info") {
+                bg = "bg-blue-600";
+                icon = "fa-envelope-open-text";
+            }
+
+            toast.className = `${bg} text-white px-5 py-4 rounded-xl shadow-2xl flex items-start gap-3 transition duration-300 transform translate-y-2 pointer-events-auto max-w-sm border border-white/10`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icon} text-lg mt-0.5"></i>
+                <div class="text-xs font-semibold leading-relaxed">${message}</div>
+                <button onclick="this.parentElement.remove()" class="ml-auto text-white/80 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 6000);
+        }
+
+async function sendEmailToRequester({ to, subject, body }) {
+            // Frontend in a static HTML page can only request email sending.
+            // If backend is not running, just ignore so buttons (Apply/Login) keep working.
+            try {
+                const res = await fetch('/api/send-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ to, subject, body })
+                });
+
+                if (!res.ok) {
+                    // do not block UI
+                    console.warn('Email not sent. Status:', res.status);
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                // Backend unreachable or not running
+                console.warn('Email send failed (backend not available):', e);
+                return false;
+            }
+        }
+
+
+        // Auto Slideshow Logic
+        function initSlideshow() {
+            const slides = document.querySelectorAll('.slide');
+            const dotsContainer = document.getElementById('landingDotsContainer');
+            if (!slides.length || !dotsContainer) return;
+
+            dotsContainer.innerHTML = "";
+            slides.forEach((_, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `w-3 h-3 rounded-full transition-all duration-300 ${idx === 0 ? 'bg-yellow-300 w-6' : 'bg-white/40'}`;
+                btn.onclick = () => selectSlide(idx);
+                dotsContainer.appendChild(btn);
+            });
+
+            setInterval(() => {
+                let next = (slideIndex + 1) % slides.length;
+                selectSlide(next);
+            }, 6000);
+        }
+
+        function selectSlide(idx) {
+            const slides = document.querySelectorAll('.slide');
+            const dots = document.getElementById('landingDotsContainer').children;
+            if (!slides[idx]) return;
+
+            slides.forEach(s => s.classList.remove('active'));
+            slides[idx].classList.add('active');
+
+            Array.from(dots).forEach((dot, i) => {
+                if (i === idx) {
+                    dot.className = "w-3 h-3 rounded-full transition-all duration-300 bg-yellow-300 w-6";
+                } else {
+                    dot.className = "w-3 h-3 rounded-full transition-all duration-300 bg-white/40";
+                }
+            });
+            slideIndex = idx;
+        }
+
+        // NAVIGATION ACTIONS
+        function openPublicLoanForm() {
+            document.getElementById('view-landing').classList.add('hidden');
+            document.getElementById('view-public-loan').classList.remove('hidden');
+            document.getElementById('pubSuccessPanel').classList.add('hidden');
+            document.getElementById('pubFormContainer').classList.remove('hidden');
+            document.getElementById('pubLoanForm').reset();
+            calculatePublicRepayAndGrowth();
+            validatePublicProgress();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function closePublicLoanForm() {
+            document.getElementById('view-public-loan').classList.add('hidden');
+            document.getElementById('view-landing').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function sanitizeNIDAPub(input) {
+            input.value = input.value.replace(/\D/g, '').slice(0, 20);
+            validatePublicProgress();
+        }
+
+        function sanitizeNIDASys(input) {
+            input.value = input.value.replace(/\D/g, '').slice(0, 20);
+            validateSysProgress();
+        }
+
+        // PUBLIC FORM STAGE & VALIDATIONS
+        function validatePublicProgress() {
+            const name = document.getElementById('pubFullName').value.trim();
+            const nida = document.getElementById('pubNida').value.trim();
+            const phone = document.getElementById('pubPhone').value.trim();
+            const email = document.getElementById('pubEmail').value.trim();
+            const loc = document.getElementById('pubLocation').value.trim();
+            const crop = document.getElementById('pubCropType').value;
+            const agree = document.getElementById('pubAgreeTerms').checked;
+
+            let filledCount = 0;
+            if (name) {
+                document.getElementById('err-pubFullName').classList.add('hidden');
+                filledCount++;
+            }
+            if (nida.length === 20) {
+                document.getElementById('err-pubNida').classList.add('hidden');
+                filledCount++;
+            }
+            if (phone && email && loc) filledCount++;
+            if (crop) filledCount++;
+
+            document.getElementById('pub-dot-1').className = filledCount >= 1 ? "w-3 h-3 rounded-full bg-emerald-600 transition-colors" : "w-3 h-3 rounded-full bg-emerald-200 transition-colors";
+            document.getElementById('pub-dot-2').className = filledCount >= 2 ? "w-3 h-3 rounded-full bg-emerald-600 transition-colors" : "w-3 h-3 rounded-full bg-emerald-200 transition-colors";
+            document.getElementById('pub-dot-3').className = filledCount >= 3 ? "w-3 h-3 rounded-full bg-emerald-600 transition-colors" : "w-3 h-3 rounded-full bg-emerald-200 transition-colors";
+            document.getElementById('pub-dot-4').className = filledCount >= 4 && agree ? "w-3 h-3 rounded-full bg-emerald-600 transition-colors" : "w-3 h-3 rounded-full bg-emerald-200 transition-colors";
+
+            const label = document.getElementById('pubStageLabel');
+            if (filledCount === 0) label.textContent = "Anza kujaza";
+            else if (filledCount < 4) label.textContent = "Karibu Nusu";
+            else if (filledCount === 4 && !agree) label.textContent = "Kubali Masharti";
+            else label.textContent = "Tayari Kutuma!";
+        }
+
+        // CALCULATIONS & GROWTH STRIP FILL (PUBLIC)
+        function calculatePublicRepayAndGrowth() {
+            const amount = parseFloat(document.getElementById('pubLoanAmount').value) || 0;
+            const hectares = parseFloat(document.getElementById('pubHectares').value) || 1.0;
+            const crop = document.getElementById('pubCropType').value;
+            const plantDateVal = document.getElementById('pubPlantDate').value;
+
+            // Compute exact 12% interest for the season
+            const principal = amount;
+            const interest = principal * INTEREST_RATE;
+            const total = principal + interest;
+
+            document.getElementById('pubRepayPrincipal').textContent = `TSh ${principal.toLocaleString('en-US')}`;
+            document.getElementById('pubRepayInterest').textContent = `TSh ${interest.toLocaleString('en-US')}`;
+            document.getElementById('pubRepayTotal').textContent = `TSh ${total.toLocaleString('en-US')}`;
+
+            const plotCropName = document.getElementById('pubPlotCropName');
+            const statDays = document.getElementById('pubStatDays');
+            const statHarvest = document.getElementById('pubStatHarvest');
+            const statHarvestSub = document.getElementById('pubStatHarvestSub');
+
+            if (!crop) {
+                plotCropName.textContent = "Chagua zao lako";
+                statDays.textContent = "Chagua zao na tarehe ya kupanda";
+                statHarvest.textContent = "—";
+                statHarvestSub.textContent = "";
+                updatePubGrowthBar(0);
+                validatePublicProgress();
+                return;
+            }
+
+            plotCropName.textContent = crop;
+
+            let maturityDays = 120; // Default Maize
+            if (crop === 'Mpunga') maturityDays = 150;
+            else if (crop === 'Maharagwe') maturityDays = 90;
+            else if (crop === 'Alizeti') maturityDays = 100;
+            else if (crop === 'Viazi') maturityDays = 80;
+            else if (crop === 'Nyanya') maturityDays = 75;
+
+            statDays.textContent = `${maturityDays} Siku hadi Kuvuna (Miezi ${Math.round(maturityDays / 30)})`;
+
+            if (plantDateVal) {
+                // Build the date locally. new Date('YYYY-MM-DD') is interpreted as UTC
+                // in some browsers and can display the previous/next day by timezone.
+                const [year, month, day] = plantDateVal.split('-').map(Number);
+                const plantDate = new Date(year, month - 1, day);
+                const harvestDate = new Date(year, month - 1, day);
+                harvestDate.setDate(harvestDate.getDate() + maturityDays);
+                statHarvest.textContent = harvestDate.toLocaleDateString('sw-TZ', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                // Growth progress calculation
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const elapsedMs = today - plantDate;
+                const elapsedDays = Math.floor(elapsedMs / (1000 * 60 * 60 * 24));
+
+                let pct = 0;
+                if (elapsedDays > 0) {
+                    pct = Math.min(100, Math.max(0, (elapsedDays / maturityDays) * 100));
+                }
+
+                updatePubGrowthBar(pct);
+
+                if (pct >= 100) {
+                    statHarvestSub.textContent = "Zao limekomaa kikamilifu! Tayari kuvuna.";
+                    statHarvestSub.className = "text-xs text-lime-400 font-bold mt-1.5 block";
+                } else {
+                    const remaining = maturityDays - elapsedDays;
+                    if (remaining > 0) {
+                        statHarvestSub.textContent = `Siku ${remaining} zimesalia hadi mavuno`;
+                        statHarvestSub.className = "text-xs text-yellow-300 font-bold mt-1.5 block";
+                    } else {
+                        statHarvestSub.textContent = "Zao lipo hatua za mwisho za ukomavu";
+                        statHarvestSub.className = "text-xs text-slate-300 font-bold mt-1.5 block";
+                    }
+                }
+            } else {
+                statHarvest.textContent = "Weka tarehe ya kupanda";
+                statHarvestSub.textContent = "";
+                updatePubGrowthBar(0);
+            }
+
+            validatePublicProgress();
+        }
+
+        function updatePubGrowthBar(percentage) {
+            const fill = document.getElementById('pubGrowthFill');
+            if (fill) fill.style.width = `${percentage}%`;
+
+            for (let i = 0; i <= 4; i++) {
+                const el = document.getElementById(`pub-stage-${i}`);
+                if (el) el.classList.remove('active', 'completed');
+            }
+
+            let activeStage = 0;
+            if (percentage >= 15 && percentage < 45) activeStage = 1;
+            else if (percentage >= 45 && percentage < 75) activeStage = 2;
+            else if (percentage >= 75 && percentage < 95) activeStage = 3;
+            else if (percentage >= 95) activeStage = 4;
+
+            for (let i = 0; i < activeStage; i++) {
+                const el = document.getElementById(`pub-stage-${i}`);
+                if (el) el.classList.add('completed');
+            }
+
+            const active = document.getElementById(`pub-stage-${activeStage}`);
+            if (active) active.classList.add('active');
+        }
+
+// SUBMIT PUBLIC FORM
+        async function handlePublicFormSubmit(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('pubFullName').value.trim();
+            const email = document.getElementById('pubEmail').value.trim();
+            const crop = document.getElementById('pubCropType').value;
+            const nida = document.getElementById('pubNida').value.trim();
+            const phone = document.getElementById('pubPhone').value.trim();
+            const loc = document.getElementById('pubLocation').value.trim();
+            const hectares = parseFloat(document.getElementById('pubHectares').value) || 1.0;
+            const requested = parseFloat(document.getElementById('pubLoanAmount').value) || 0;
+            const agree = document.getElementById('pubAgreeTerms').checked;
+
+            let hasErrors = false;
+
+            if (!name || name.split(' ').length < 2) {
+                document.getElementById('err-pubFullName').textContent = "Andika jina lako la kwanza na la ukoo.";
+                document.getElementById('err-pubFullName').classList.remove('hidden');
+                hasErrors = true;
+            }
+            if (nida.length !== 20) {
+                document.getElementById('err-pubNida').textContent = "NIDA lazima iwe na tarakimu 20 sahihi.";
+                document.getElementById('err-pubNida').classList.remove('hidden');
+                hasErrors = true;
+            }
+            if (requested < 10000) {
+                document.getElementById('err-pubLoanAmount').textContent = "Kiasi cha chini cha mkopo ni Tsh 10,000.";
+                document.getElementById('err-pubLoanAmount').classList.remove('hidden');
+                hasErrors = true;
+            }
+
+            if (hasErrors) {
+                showToast("Tafadhali kagua taarifa zilizoonyesha makosa.", "error");
+                return;
+            }
+
+            const systemFee = requested * INTEREST_RATE;
+            const totalDebt = requested + systemFee;
+
+            let harvestMonths = 4;
+            if (crop === 'Mpunga') harvestMonths = 5;
+            else if (crop === 'Maharagwe') harvestMonths = 3;
+
+            const targetDate = new Date();
+            targetDate.setMonth(targetDate.getMonth() + harvestMonths);
+
+            const newRecord = {
+                id: dbFarmers.length + 1,
+                name: name,
+                email: email,
+                crop: crop,
+                hectares: hectares,
+                requestedAmount: requested,
+                approvedAmount: requested,
+                totalDebt: totalDebt,
+                systemFee: systemFee,
+                harvestMonths: harvestMonths,
+                dueDate: targetDate.toISOString().split('T')[0],
+                status: "Pending",
+                isSugu: false,
+                penalty: 0
+            };
+
+            dbFarmers.unshift(newRecord);
+            saveToSQLiteStorage();
+            
+            // Render confirmation screen
+            document.getElementById('pubConfirmEmail').textContent = email;
+            document.getElementById('pubFormContainer').classList.add('hidden');
+            document.getElementById('pubSuccessPanel').classList.remove('hidden');
+
+            showToast("Ombi limesajiliwa kwenye database kwa usalama!", "success");
+            syncSQLiteDatabase();
+            await sendEmailToRequester({
+                to: email,
+                subject: "Uthibitisho wa Kupokea Ombi la Mkopo (AgriLoan)",
+                body: `Asante ${name},\n\nTaarifa yako ya ombi la mkopo imepokelewa na kuingizwa kwenye mfumo.\n\nJina: ${name}\nZao: ${crop}\nKiasi: TSh ${requested.toLocaleString('en-US')}\nHali: Pending (Uhakiki wa Admin)\n\nTutakutumia taarifa za hatua inayofuata baada ya ukaguzi.\n\n— AgriLoan Systems`
+            });
+        }
+
+        // PORTAL TAB SELECTOR
+        function switchSystemTab(tabId) {
+            const role = activeUser && activeUser.role ? activeUser.role : 'admin';
+
+            // Loan applications are exclusively for farmers. This also prevents
+            // staff/admin from opening the view through a direct JS call.
+            if (role !== 'mkulima' && tabId === 'loan-request') {
+                tabId = 'dashboard';
+            }
+
+            // Access control: mkulima hataingia dashboard (na pia asipate ku-render staff/uhariri)
+            if (role === 'mkulima' && tabId === 'dashboard') {
+                tabId = 'loan-request';
+            }
+            if (role === 'mkulima' && tabId === 'staff-list') {
+                tabId = 'loan-request';
+            }
+
+            currentSystemTab = tabId;
+            const tabs = ["dashboard", "loan-request", "farmers-list", "market", "staff-list"];
+            
+            tabs.forEach(tab => {
+
+                const view = document.getElementById(`tab-${tab}`);
+                const btn = document.getElementById(`nav-${tab}`);
+                if (!view || !btn) return;
+
+                if (tab === tabId) {
+                    view.classList.remove('hidden');
+                    btn.className = "flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold transition bg-emerald-900 text-white";
+                } else {
+                    view.classList.add('hidden');
+                    btn.className = "flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold transition text-emerald-100 hover:bg-emerald-900";
+                }
+
+                // Do this after setting className, because className replaces the
+                // prior `hidden` class that is applied during login.
+                if (tab === 'loan-request' && role !== 'mkulima') {
+                    btn.classList.add('hidden');
+                    view.classList.add('hidden');
+                }
+            });
+
+            const titleMap = {
+                "dashboard": "Dashboard ya Takwimu (Meneja & Staff)",
+                "loan-request": "Omba Mkopo Mpya wa Kilimo",
+                "farmers-list": "Orodha ya Wakulima & Madeni (SQLite Database)",
+                "market": "Soko la Mazao (Uza na Nunua)",
+                "staff-list": "Wafanyakazi Waliosajiliwa kwenye Mfumo"
+            };
+            document.getElementById('current-system-title').textContent = titleMap[tabId];
+
+            if (tabId === 'dashboard') {
+                // Only admin/staff wanaweza kuona dashboard ya takwimu
+                if (!(activeUser && activeUser.role === 'mkulima')) {
+                    renderSQLiteChart();
+                }
+            }
+
+        }
+
+        // MODAL OPEN / CLOSE
+        function openPortalModal() {
+            document.getElementById('portal-modal').classList.remove('hidden');
+            syncSelectedIdentity();
+        }
+
+        function closePortalModal() {
+            document.getElementById('portal-modal').classList.add('hidden');
+        }
+
+        function syncSelectedIdentity() {
+            const role = document.getElementById('sel-login-identity').value;
+            const emailInput = document.getElementById('txt-login-email');
+            
+            if (role === 'admin') {
+                emailInput.value = "admin@shambafund.com";
+            } else if (role === 'staff') {
+                emailInput.value = "mary@shambafund.com";
+            } else {
+                emailInput.value = "juma@gmail.com";
+            }
+        }
+
+        // USER PORTAL LOGIN ACTION
+        function performUserLogin() {
+            const role = document.getElementById('sel-login-identity').value;
+            
+            if (role === 'admin') {
+                activeUser = { role: "admin", name: "Admin Mkuu", email: "admin@shambafund.com" };
+            } else if (role === 'staff') {
+                activeUser = { role: "staff", name: "Mary Lema (Staff)", email: "mary@shambafund.com" };
+            } else {
+                activeUser = { role: "mkulima", name: "Juma Shabani", email: "juma@gmail.com" };
+            }
+
+            // Sync user details in side panel
+            document.getElementById('user-display').textContent = activeUser.name;
+            document.getElementById('user-role-badge').textContent = activeUser.role.toUpperCase();
+            document.getElementById('user-initial').textContent = activeUser.name.charAt(0);
+
+            // Strict Access Control (mkulima aone taarifa zake tu; asione dashboard ya takwimu ya mfumo)
+            const sysLoanRequestBtn = document.getElementById('nav-loan-request');
+            const sysDashboardBtn = document.getElementById('nav-dashboard');
+            const sysFarmersListBtn = document.getElementById('nav-farmers-list');
+
+            // mkulima: aone loan-request + farmers-list (record zake tu via filter), afunge dashboard & staff/kuhariri
+            // admin/staff: aone dashboard + farmers-list + staff-list
+            if (activeUser.role === 'mkulima') {
+                if (sysLoanRequestBtn) sysLoanRequestBtn.classList.remove('hidden');
+                if (sysDashboardBtn) sysDashboardBtn.classList.add('hidden');
+                if (sysFarmersListBtn) sysFarmersListBtn.classList.remove('hidden');
+
+                // Pre-fill mkulima details kwenye fomu ya maombi
+                const sysEmailEl = document.getElementById('sysEmail');
+                const sysFullNameEl = document.getElementById('sysFullName');
+                if (sysEmailEl) sysEmailEl.value = activeUser.email;
+                if (sysFullNameEl) sysFullNameEl.value = activeUser.name;
+
+                calculateSysRepayAndGrowth();
+            } else {
+                // admin/staff
+                if (sysLoanRequestBtn) sysLoanRequestBtn.classList.add('hidden');
+                if (sysDashboardBtn) sysDashboardBtn.classList.remove('hidden');
+                if (sysFarmersListBtn) sysFarmersListBtn.classList.remove('hidden');
+            }
+
+
+            // Market upload access message sync
+            const marketAccessNotice = document.getElementById('div-market-permission');
+            const mktForm = document.getElementById('sysMarketForm');
+            
+            if (activeUser.role === 'staff') {
+                marketAccessNotice.className = "bg-red-50 border border-red-200 p-4 rounded-xl text-xs text-red-800 flex items-start gap-2";
+                marketAccessNotice.innerHTML = `<i class="fa-solid fa-ban text-base mt-0.5"></i><span>Umeingia kama <strong>Staff</strong>. Huna haki ya kupakia bidhaa sokoni. Wakulima pekee ndio wenye ruhusa hii.</span>`;
+                mktForm.classList.add('opacity-50', 'pointer-events-none');
+            } else {
+                marketAccessNotice.className = "bg-emerald-50 border border-emerald-200 p-4 rounded-xl text-xs text-emerald-850 flex items-start gap-2";
+                marketAccessNotice.innerHTML = `<i class="fa-solid fa-circle-check text-base mt-0.5"></i><span>Umeingia kama <strong>${activeUser.role.toUpperCase()}</strong>. Una ruhusa kamili ya kupakia mazao yako sokoni.</span>`;
+                mktForm.classList.remove('opacity-50', 'pointer-events-none');
+            }
+
+            // Toggle view visibility
+            document.getElementById('view-landing').classList.add('hidden');
+            document.getElementById('view-public-loan').classList.add('hidden');
+            document.getElementById('view-system').classList.remove('hidden');
+            closePortalModal();
+
+            showToast(`Karibu ${activeUser.name}! Umeingia kikamilifu kwenye portal.`, "success");
+
+            // Redirect kulingana na role
+            if (activeUser.role === 'mkulima') {
+                switchSystemTab('loan-request');
+            } else {
+                switchSystemTab('dashboard');
+            }
+
+            syncSQLiteDatabase();
+        }
+
+
+        function exitSystemToLanding() {
+            document.getElementById('view-system').classList.add('hidden');
+            document.getElementById('view-landing').classList.remove('hidden');
+            // showToast("Umetoka kwenye portal salama. Karibu tena!", "info");
+        }
+
+
+        // INNER PORTAL FORM CALCULATIONS
+        function validateSysProgress() {
+            const name = document.getElementById('sysFullName').value.trim();
+            const nida = document.getElementById('sysNida').value.trim();
+            const phone = document.getElementById('sysPhone').value.trim();
+            const loc = document.getElementById('sysLocation').value.trim();
+            const crop = document.getElementById('sysCropType').value;
+            const agree = document.getElementById('sysAgreeTerms').checked;
+
+            let filledCount = 0;
+            if (name) filledCount++;
+            if (nida.length === 20) filledCount++;
+            if (phone && loc) filledCount++;
+            if (crop) filledCount++;
+
+            document.getElementById('sys-dot-1').className = filledCount >= 1 ? "w-2.5 h-2.5 rounded-full bg-emerald-700" : "w-2.5 h-2.5 rounded-full bg-emerald-200";
+            document.getElementById('sys-dot-2').className = filledCount >= 2 ? "w-2.5 h-2.5 rounded-full bg-emerald-700" : "w-2.5 h-2.5 rounded-full bg-emerald-200";
+            document.getElementById('sys-dot-3').className = filledCount >= 3 ? "w-2.5 h-2.5 rounded-full bg-emerald-700" : "w-2.5 h-2.5 rounded-full bg-emerald-200";
+            document.getElementById('sys-dot-4').className = filledCount >= 4 && agree ? "w-2.5 h-2.5 rounded-full bg-emerald-700" : "w-2.5 h-2.5 rounded-full bg-emerald-200";
+
+            const label = document.getElementById('sysStageLabel');
+            if (filledCount === 0) label.textContent = "Anza kujaza";
+            else if (filledCount < 4) label.textContent = "Karibu Nusu";
+            else if (filledCount === 4 && !agree) label.textContent = "Kubali Masharti";
+            else label.textContent = "Tayari Kutuma!";
+        }
+
+        function calculateSysRepayAndGrowth() {
+            const amount = parseFloat(document.getElementById('sysLoanAmount').value) || 0;
+            const crop = document.getElementById('sysCropType').value;
+            const plantDateVal = document.getElementById('sysPlantDate').value;
+
+            const principal = amount;
+            const interest = principal * INTEREST_RATE;
+            const total = principal + interest;
+
+            document.getElementById('sysRepayPrincipal').textContent = `TSh ${principal.toLocaleString('en-US')}`;
+            document.getElementById('sysRepayInterest').textContent = `TSh ${interest.toLocaleString('en-US')}`;
+            document.getElementById('sysRepayTotal').textContent = `TSh ${total.toLocaleString('en-US')}`;
+
+            const plotCropName = document.getElementById('sysPlotCropName');
+            const statDays = document.getElementById('sysStatDays');
+            const statHarvest = document.getElementById('sysStatHarvest');
+
+            if (!crop) {
+                plotCropName.textContent = "Chagua zao lako";
+                statDays.textContent = "Chagua zao na tarehe ya kupanda";
+                statHarvest.textContent = "—";
+                updateSysGrowthBar(0);
+                validateSysProgress();
+                return;
+            }
+
+            plotCropName.textContent = crop;
+
+            let maturityDays = 120;
+            if (crop === 'Mpunga') maturityDays = 150;
+            else if (crop === 'Maharagwe') maturityDays = 90;
+            else if (crop === 'Alizeti') maturityDays = 100;
+            else if (crop === 'Viazi') maturityDays = 80;
+            else if (crop === 'Nyanya') maturityDays = 75;
+
+            statDays.textContent = `${maturityDays} Siku hadi Kuvuna`;
+
+            if (plantDateVal) {
+                const [year, month, day] = plantDateVal.split('-').map(Number);
+                const plantDate = new Date(year, month - 1, day);
+                const harvestDate = new Date(year, month - 1, day);
+                harvestDate.setDate(harvestDate.getDate() + maturityDays);
+                statHarvest.textContent = harvestDate.toLocaleDateString('sw-TZ', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const elapsedMs = today - plantDate;
+                const elapsedDays = Math.floor(elapsedMs / (1000 * 60 * 60 * 24));
+
+                let pct = 0;
+                if (elapsedDays > 0) {
+                    pct = Math.min(100, Math.max(0, (elapsedDays / maturityDays) * 100));
+                }
+                updateSysGrowthBar(pct);
+            } else {
+                statHarvest.textContent = "Weka tarehe ya kupanda";
+                updateSysGrowthBar(0);
+            }
+            validateSysProgress();
+        }
+
+        function updateSysGrowthBar(percentage) {
+            const fill = document.getElementById('sysGrowthFill');
+            if (fill) fill.style.width = `${percentage}%`;
+
+            for (let i = 0; i <= 4; i++) {
+                const el = document.getElementById(`sys-stage-${i}`);
+                if (el) el.classList.remove('active', 'completed');
+            }
+
+            let activeStage = 0;
+            if (percentage >= 15 && percentage < 45) activeStage = 1;
+            else if (percentage >= 45 && percentage < 75) activeStage = 2;
+            else if (percentage >= 75 && percentage < 95) activeStage = 3;
+            else if (percentage >= 95) activeStage = 4;
+
+            for (let i = 0; i < activeStage; i++) {
+                const el = document.getElementById(`sys-stage-${i}`);
+                if (el) el.classList.add('completed');
+            }
+
+            const active = document.getElementById(`sys-stage-${activeStage}`);
+            if (active) active.classList.add('active');
+        }
+
+        // SUBMIT LOAN REQUEST FROM INSIDE PORTAL
+        function handlePortalFormSubmit(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('sysFullName').value.trim();
+            const email = document.getElementById('sysEmail').value.trim();
+            const crop = document.getElementById('sysCropType').value;
+            const nida = document.getElementById('sysNida').value.trim();
+            const phone = document.getElementById('sysPhone').value.trim();
+            const loc = document.getElementById('sysLocation').value.trim();
+            const hectares = parseFloat(document.getElementById('sysHectares').value) || 1.0;
+            const requested = parseFloat(document.getElementById('sysLoanAmount').value) || 0;
+            const agree = document.getElementById('sysAgreeTerms').checked;
+
+            if (nida.length !== 20 || requested < 10000 || !agree) {
+                showToast("Tafadhali jaza fomu kwa usahihi kabla ya kuwasilisha.", "error");
+                return;
+            }
+
+            const systemFee = requested * INTEREST_RATE;
+            const totalDebt = requested + systemFee;
+
+            let harvestMonths = 4;
+            if (crop === 'Mpunga') harvestMonths = 5;
+            else if (crop === 'Maharagwe') harvestMonths = 3;
+
+            const targetDate = new Date();
+            targetDate.setMonth(targetDate.getMonth() + harvestMonths);
+
+            const newRecord = {
+                id: dbFarmers.length + 1,
+                name: name,
+                email: email,
+                crop: crop,
+                hectares: hectares,
+                requestedAmount: requested,
+                approvedAmount: requested,
+                totalDebt: totalDebt,
+                systemFee: systemFee,
+                harvestMonths: harvestMonths,
+                dueDate: targetDate.toISOString().split('T')[0],
+                status: "Pending",
+                isSugu: false,
+                penalty: 0
+            };
+
+            dbFarmers.unshift(newRecord);
+            saveToSQLiteStorage();
+            
+            showToast("Ombi lako jipya limewasilishwa kwenye mfumo!", "success");
+            document.getElementById('sysPortalLoanForm').reset();
+            calculateSysRepayAndGrowth();
+            syncSQLiteDatabase();
+        }
+
+        // ADMIN CONTROLS & SQLITE SIMULATION ENGINE
+        function verifyAndGeneratePassword(farmerId) {
+            const farmer = dbFarmers.find(f => f.id === farmerId);
+            if (farmer) {
+                farmer.status = "Approved";
+                saveToSQLiteStorage();
+                const generatedPassword = "AGRI-" + Math.floor(100000 + Math.random() * 900000);
+                showToast(`BARUA PEPE: Nenosiri la Kuingilia Mfumo: "${generatedPassword}" limetumwa kwa "${farmer.email}".`, "info");
+                syncSQLiteDatabase();
+            }
+        }
+
+        function deleteFarmerFromSQLite(farmerId) {
+            if (activeUser.role !== 'admin') {
+                showToast("Kosa la Ruhusa: Wafanyakazi (Staff) au Wakulima hawawezi kufuta data ya SQLite!", "error");
+                return;
+            }
+            dbFarmers = dbFarmers.filter(f => f.id !== farmerId);
+            saveToSQLiteStorage();
+            showToast("Mkulima amefutwa kabisa kutoka kwenye SQLite database!", "success");
+            syncSQLiteDatabase();
+        }
+
+        function settleHarvestLoan(farmerId) {
+            const farmer = dbFarmers.find(f => f.id === farmerId);
+            if (farmer) {
+                farmer.status = "Paid";
+                farmer.penalty = 0;
+                farmer.isSugu = false;
+                saveToSQLiteStorage();
+                showToast(`Mkopo wa Tsh ${farmer.totalDebt.toLocaleString()} umelipwa kikamilifu!`, "success");
+                syncSQLiteDatabase();
+            }
+        }
+
+        function runFarmerSearch() {
+            const query = document.getElementById('sysSearchFarmer').value.toLowerCase();
+            renderFarmersTable(query);
+        }
+
+        // RENDER DATA TABLES
+        function renderFarmersTable(searchQuery = "") {
+            const tbody = document.getElementById('tbl-farmers-body');
+            if (!tbody) return;
+            tbody.innerHTML = "";
+
+            let targetList = dbFarmers;
+            if (activeUser.role === 'mkulima') {
+                targetList = dbFarmers.filter(f => f.email === activeUser.email);
+            }
+
+            if (searchQuery !== "") {
+                targetList = targetList.filter(f => 
+                    f.name.toLowerCase().includes(searchQuery) ||
+                    f.email.toLowerCase().includes(searchQuery) ||
+                    f.crop.toLowerCase().includes(searchQuery)
+                );
+            }
+
+            const badge = document.getElementById('lbl-farmers-count');
+            if (badge) badge.textContent = `${targetList.length} Wakulima`;
+
+            targetList.forEach(farmer => {
+                let badgeClass = "bg-amber-50 text-amber-700 border-amber-100";
+                let statusName = farmer.status;
+
+                if (farmer.status === 'Approved') badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-100";
+                if (farmer.status === 'Paid') badgeClass = "bg-blue-50 text-blue-700 border-blue-100";
+                if (farmer.isSugu) {
+                    badgeClass = "bg-red-55 text-red-650 bg-red-50 text-red-750 border-red-200 animate-pulse";
+                    statusName = "Deni Sugu";
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition duration-150";
+                tr.innerHTML = `
+                    <td class="p-4 pl-6">
+                        <div class="font-bold text-slate-800">${farmer.name}</div>
+                        <div class="text-[11px] text-slate-400 font-medium">${farmer.email}</div>
+                    </td>
+                    <td class="p-4 font-semibold text-slate-700">${farmer.crop}</td>
+                    <td class="p-4 font-medium text-slate-600">${farmer.hectares} Hekta</td>
+                    <td class="p-4 font-semibold text-slate-700">Tsh ${(farmer.requestedAmount).toLocaleString()}</td>
+                    <td class="p-4">
+                        <div class="font-bold text-slate-800">Tsh ${(farmer.totalDebt).toLocaleString()}</div>
+                        ${farmer.penalty > 0 ? `<span class="text-[10px] text-red-600 font-bold"><i class="fa-solid fa-triangle-exclamation"></i> Penalti: Tsh ${farmer.penalty.toLocaleString()}</span>` : `<span class="text-[10px] text-emerald-600 font-semibold">Riba 12%: Tsh ${farmer.systemFee.toLocaleString()}</span>`}
+                    </td>
+                    <td class="p-4 text-xs font-semibold text-slate-600">
+                        <div>${farmer.dueDate}</div>
+                        <div class="text-[10px] text-slate-400">Mavuno baada ya miezi ${farmer.harvestMonths}</div>
+                    </td>
+                    <td class="p-4">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${badgeClass}">
+                            ${statusName}
+                        </span>
+                    </td>
+                    <td class="p-4 text-right pr-6 no-print">
+                        <div class="flex items-center justify-end gap-2">
+                            ${farmer.status === 'Pending' && activeUser.role === 'admin' ? `
+                                <button onclick="verifyAndGeneratePassword(${farmer.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition">
+                                    Thibitisha (Verify)
+                                </button>
+                            ` : ''}
+
+                            ${farmer.status === 'Approved' && (activeUser.role === 'admin' || activeUser.role === 'staff') ? `
+                                <button onclick="settleHarvestLoan(${farmer.id})" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition">
+                                    Kulipa (Settle)
+                                </button>
+                            ` : ''}
+
+                            ${activeUser.role === 'admin' ? `
+                                <button onclick="deleteFarmerFromSQLite(${farmer.id})" class="text-slate-400 hover:text-red-600 p-2 rounded-lg transition" title="Futa">
+                                    <i class="fa-solid fa-trash-can text-sm"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // SOKO / MARKETPLACE UTILITIES
+        function handleSystemMarketSubmit(event) {
+            event.preventDefault();
+            if (activeUser.role === 'staff') {
+                showToast("Kosa la Ruhusa: Staff hawaruhusiwi kupakia mazao sokoni!", "error");
+                return;
+            }
+
+            const crop = document.getElementById('mktCrop').value;
+            const price = parseFloat(document.getElementById('mktPrice').value);
+            const qty = document.getElementById('mktQty').value;
+
+            const defaultCropImages = {
+                "mahindi": "media/mahindi.jpg",
+                "mpunga": "media/Fresh Kyela rice.jpg",
+                "mchele": "media/Fresh Kyela rice.jpg",
+                "alizeti": "media/Sunflower.jpg",
+                "nyanya": "media/nyanya.jpg",
+                "viazi": "media/Potatoes.jpg",
+                "vitunguu": "media/vitungu.jpg",
+                "kahawa": "media/coffee bean.jpg"
+            };
+
+            let imgUrl = selectedMarketImageBase64;
+            if (!imgUrl) {
+                const lowerCrop = crop.toLowerCase();
+                let matched = false;
+                for (const [key, val] of Object.entries(defaultCropImages)) {
+                    if (lowerCrop.includes(key)) {
+                        imgUrl = val;
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) {
+                    imgUrl = "media/karanga.jpg";
+                }
+            }
+
+            const newItem = {
+                id: dbMarket.length + 1,
+                seller: activeUser.name,
+                crop: crop,
+                price: price,
+                qty: qty,
+                image: imgUrl
+            };
+
+            dbMarket.unshift(newItem);
+            saveToSQLiteStorage();
+            showToast(`Bidhaa ya "${crop}" imepakiwa sokoni!`, "success");
+            
+            document.getElementById('sysMarketForm').reset();
+            clearMarketImagePreview();
+            syncSQLiteDatabase();
+        }
+
+        function purchaseSystemCrop(itemId) {
+            const cropItem = dbMarket.find(m => m.id === itemId);
+            if (cropItem) {
+                showToast(`Ununuzi wa ${cropItem.qty} ya ${cropItem.crop} wenye thamani ya Tsh ${(cropItem.price).toLocaleString()} umekamilika!`, "success");
+                dbMarket = dbMarket.filter(m => m.id !== itemId);
+                saveToSQLiteStorage();
+                syncSQLiteDatabase();
+            }
+        }
+
+        function renderMarketGrid() {
+            const grid = document.getElementById('mkt-grid-container');
+            if (!grid) return;
+            grid.innerHTML = "";
+
+            // Mapping ya picha za ndani (offline) ili kuondoa kabisa picha za online hata kama ziko kwenye localStorage
+            const cropToLocalImage = {
+                "mahindi": "media/mahindi.jpg",
+                "mpunga": "media/Fresh Kyela rice.jpg",
+                "mchele": "media/Fresh Kyela rice.jpg",
+                "alizeti": "media/Sunflower.jpg",
+                "nyanya": "media/nyanya.jpg",
+                "viazi": "media/Potatoes.jpg",
+                "vitunguu": "media/vitungu.jpg",
+                "kahawa": "media/coffee bean.jpg",
+                "default": "media/karanga.jpg"
+            };
+
+            // Safisha hifadhi ya zamani (kama kuna items zenye images za online kwenye localStorage)
+            // ili render itumie picha za ndani kila wakati.
+            try {
+                dbMarket = (dbMarket || []).map(item => {
+                    const crop = item && item.crop ? String(item.crop).toLowerCase() : "";
+                    const savedImage = item && item.image ? String(item.image) : "";
+                    // Keep a photo uploaded by a farmer; replace only missing, online,
+                    // or obsolete .jfif paths with a matching local image.
+                    if (savedImage.startsWith('data:image/')) return item;
+                    if (savedImage && !/^https?:\/\//i.test(savedImage) && !/\.jfif$/i.test(savedImage)) return item;
+                    let localImg = cropToLocalImage.default;
+                    if (crop.includes('mahindi')) localImg = cropToLocalImage.mahindi;
+                    else if (crop.includes('mpunga') || crop.includes('mchele')) localImg = cropToLocalImage.mpunga;
+                    else if (crop.includes('alizeti') || crop.includes('sunflower')) localImg = cropToLocalImage.alizeti;
+                    else if (crop.includes('nyanya')) localImg = cropToLocalImage.nyanya;
+                    else if (crop.includes('viazi')) localImg = cropToLocalImage.viazi;
+                    else if (crop.includes('vitunguu')) localImg = cropToLocalImage.vitunguu;
+                    else if (crop.includes('kahawa')) localImg = cropToLocalImage.kahawa;
+                    return { ...item, image: localImg };
+                });
+                saveToSQLiteStorage();
+            } catch (e) {
+                // ignore
+            }
+
+            function normalizeMarketImage(item) {
+                const img = item && item.image ? String(item.image) : "";
+                const crop = item && item.crop ? String(item.crop).toLowerCase() : "";
+
+                // Ikiwa ni online (http/https au unsplash), ibadilishe na picha ya ndani kulingana na crop
+                const isOnline = /^https?:\/\//i.test(img) || img.includes('images.unsplash.com') || /\.jfif$/i.test(img);
+                if (isOnline || !img) {
+                    for (const [key, val] of Object.entries(cropToLocalImage)) {
+                        if (key === 'default') continue;
+                        if (crop.includes(key)) return val;
+                    }
+                    return cropToLocalImage.default;
+                }
+
+                // Ikiwa ni local path, rudi kama ilivyo
+                return img;
+            }
+
+            dbMarket.forEach(item => {
+                const imgSource = normalizeMarketImage(item);
+
+
+                const col = document.createElement('div');
+                col.className = "market-product-card rounded-3xl overflow-hidden flex flex-col justify-between transition-all duration-200";
+                col.innerHTML = `
+                    <div class="market-product-image relative w-full overflow-hidden">
+                        <img src="${imgSource}" alt="${item.crop}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='media/karanga.jpg';">
+                        <span class="market-badge absolute top-3 left-3 backdrop-blur-sm text-[10px] font-bold px-3 py-1 rounded-full">Bidhaa Sokoni</span>
+                        <span class="market-qty-badge absolute top-3 right-3 backdrop-blur-sm text-[10px] font-bold px-2.5 py-1 rounded-full">${item.qty} zipo</span>
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-between space-y-4">
+                        <div>
+                            <h4 class="text-lg font-bold text-slate-800 line-clamp-1">${item.crop}</h4>
+                            <p class="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
+                                <i class="fa-solid fa-circle-user text-emerald-700 text-sm"></i> Muuzaji: <strong class="text-slate-700 font-semibold">${item.seller}</strong>
+                            </p>
+                        </div>
+                        <div class="border-t border-slate-100 pt-4 flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Bei</span>
+                                <span class="text-lg font-extrabold text-[#063c1a]">Tsh ${(item.price).toLocaleString()}</span>
+                            </div>
+                            <button onclick="purchaseSystemCrop(${item.id})" class="market-buy-button text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow-sm no-print">
+                                Nunua sasa <i class="fa-solid fa-basket-shopping ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(col);
+            });
+
+            const sokoCount = document.getElementById('stat-soko-count');
+            if (sokoCount) sokoCount.textContent = `${dbMarket.length} Mazao`;
+        }
+
+        function previewMarketImage(input) {
+            const file = input.files[0];
+            const statusLabel = document.getElementById('lbl-upload-status');
+            const previewContainer = document.getElementById('mktImagePreviewContainer');
+            const previewImg = document.getElementById('mktImagePreview');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    selectedMarketImageBase64 = e.target.result;
+                    previewImg.src = e.target.result;
+                    previewContainer.classList.remove('hidden');
+                    statusLabel.textContent = file.name.substring(0, 10) + "...";
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function clearMarketImagePreview() {
+            selectedMarketImageBase64 = "";
+            document.getElementById('mktImageFile').value = "";
+            document.getElementById('mktImagePreviewContainer').classList.add('hidden');
+            document.getElementById('lbl-upload-status').textContent = "Chagua Picha";
+        }
+
+        function renderStaffTable() {
+            const tbody = document.getElementById('tbl-staff-body');
+            if (!tbody) return;
+            tbody.innerHTML = "";
+
+            dbStaff.forEach(st => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4 pl-6 font-bold text-slate-800">${st.id}</td>
+                    <td class="p-4 font-bold text-slate-700">${st.name}</td>
+                    <td class="p-4 text-slate-500">${st.email}</td>
+                    <td class="p-4"><span class="bg-slate-100 text-slate-800 text-xs font-bold px-2.5 py-1 rounded-full">${st.role}</span></td>
+                    <td class="p-4 text-xs text-slate-500">${st.permissions}</td>
+                    <td class="p-4 text-right pr-6">
+                        <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
+                            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Amilifu
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // SQLite PERSISTENT STATE SYNC ENGINE
+        function syncSQLiteDatabase() {
+            const totalFarmers = dbFarmers.length;
+            const approvedFarmers = dbFarmers.filter(f => f.status === 'Approved');
+            const totalLoansApproved = approvedFarmers.reduce((sum, f) => sum + f.approvedAmount, 0);
+            const totalRevenueFees = approvedFarmers.reduce((sum, f) => sum + f.systemFee, 0);
+            const totalPenalties = dbFarmers.filter(f => f.isSugu).reduce((sum, f) => sum + f.penalty, 0);
+
+            // Display in system dashboard cards
+            const fEl = document.getElementById('stat-farmers');
+            const lEl = document.getElementById('stat-loans');
+            const feEl = document.getElementById('stat-fees');
+            const pEl = document.getElementById('stat-penalties');
+
+            if (fEl) fEl.textContent = totalFarmers;
+            if (lEl) lEl.textContent = `Tsh ${totalLoansApproved.toLocaleString()}`;
+            if (feEl) feEl.textContent = `Tsh ${totalRevenueFees.toLocaleString()}`;
+            if (pEl) pEl.textContent = `Tsh ${totalPenalties.toLocaleString()}`;
+
+            // Sync public home stats
+            const lf = document.getElementById('live-stat-farmers');
+            const ll = document.getElementById('live-stat-loans');
+            if (lf) lf.textContent = `${totalFarmers}+`;
+            if (ll) ll.textContent = `Tsh ${(totalLoansApproved/1000000).toFixed(1)}M`;
+
+            // Swahili printed dates
+            const swahiliToday = new Date().toLocaleDateString('sw-TZ', { year: 'numeric', month: 'long', day: 'numeric' });
+            const elements = document.getElementsByClassName('lbl-current-date');
+            for (let el of elements) {
+                el.textContent = swahiliToday;
+            }
+
+            renderFarmersTable();
+            renderMarketGrid();
+            renderStaffTable();
+
+            if (currentSystemTab === 'dashboard') {
+                renderSQLiteChart();
+            }
+        }
+
+        // RENDER BAR GRAPHS ON ADMIN PORTAL
+        function renderSQLiteChart() {
+            const canvas = document.getElementById('systemPerformanceChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            const pendingTotal = dbFarmers.filter(f => f.status === 'Pending').reduce((sum, f) => sum + f.requestedAmount, 0);
+            const approvedTotal = dbFarmers.filter(f => f.status === 'Approved').reduce((sum, f) => sum + f.approvedAmount, 0);
+            const paidTotal = dbFarmers.filter(f => f.status === 'Paid').reduce((sum, f) => sum + f.approvedAmount, 0);
+            const feesTotal = dbFarmers.filter(f => f.status === 'Approved' || f.status === 'Paid').reduce((sum, f) => sum + f.systemFee, 0);
+            const penaltiesTotal = dbFarmers.filter(f => f.isSugu).reduce((sum, f) => sum + f.penalty, 0);
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Pending Requests', 'Mikopo Amilifu', 'Mikopo Iliyolipwa', 'Mapato ya Riba (12%)', 'Penalti zilizopo'],
+                    datasets: [{
+                        label: 'Kiasi (TZS) kwenye SQLite',
+                        data: [pendingTotal, approvedTotal, paidTotal, feesTotal, penaltiesTotal],
+                        backgroundColor: [
+                            'rgba(245, 158, 11, 0.85)',
+                            'rgba(59, 130, 246, 0.85)',
+                            'rgba(16, 185, 129, 0.85)',
+                            'rgba(139, 92, 246, 0.85)',
+                            'rgba(239, 68, 68, 0.85)'
+                        ],
+                        borderColor: [
+                            '#d97706',
+                            '#2563eb',
+                            '#059669',
+                            '#7c3aed',
+                            '#dc2626'
+                        ],
+                        borderWidth: 1.5,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'Tsh ' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // IMMEDIATE INITIALIZATION
+        window.onload = function() {
+            initSlideshow();
+            calculatePublicRepayAndGrowth();
+            syncSQLiteDatabase();
+        }
+    </script>
+</body>
+</html>
